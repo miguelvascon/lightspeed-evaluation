@@ -1,12 +1,13 @@
 """Unit tests for RagasMetrics."""
 
 import concurrent.futures
+import math
 
 import pytest
 from pytest_mock import MockerFixture
 
 from lightspeed_evaluation.core.embedding.manager import EmbeddingError
-from lightspeed_evaluation.core.metrics.ragas import RagasMetrics
+from lightspeed_evaluation.core.metrics.ragas import RagasMetrics, _clamp_score
 from lightspeed_evaluation.core.models import EvaluationScope
 from lightspeed_evaluation.core.system.exceptions import (
     ConfigurationError,
@@ -112,3 +113,58 @@ class TestEvaluateExceptionHandling:
 
         assert score is None
         assert "Unsupported Ragas metric" in reason
+
+
+class TestClampScore:
+    """NaN must survive clamping so a failed Ragas metric is not a silent pass."""
+
+    def test_nan_passes_through(self) -> None:
+        """A NaN score is returned unchanged instead of being clamped to 1.0."""
+        assert math.isnan(_clamp_score(float("nan")))
+
+    @pytest.mark.parametrize(
+        ("raw", "clamped"),
+        [
+            (1.0000000000000007, 1.0),
+            (-1e-12, 0.0),
+            (0.5, 0.5),
+        ],
+    )
+    def test_still_clamps_finite_scores(self, raw: float, clamped: float) -> None:
+        """Finite scores stay inside [0, 1], including float noise at the bounds."""
+        assert _clamp_score(raw) == clamped
+
+
+class TestNanScoreReportedAsError:
+    """evaluate() turns a NaN Ragas score into the malformed-output error."""
+
+    @pytest.mark.parametrize(
+        ("metric_class", "metric_name"),
+        [
+            ("Faithfulness", "faithfulness"),
+            ("ContextRelevance", "context_relevance"),
+        ],
+    )
+    def test_nan_score_becomes_malformed_output_error(
+        self,
+        ragas_metrics: RagasMetrics,
+        turn_scope: EvaluationScope,
+        mocker: MockerFixture,
+        metric_class: str,
+        metric_name: str,
+    ) -> None:
+        """A mocked NaN score is reported as an error, not a 1.0 pass."""
+        mocked = mocker.patch(
+            f"lightspeed_evaluation.core.metrics.ragas.{metric_class}"
+        )
+        mocked.return_value.score.return_value.value = float("nan")
+
+        score, reason = ragas_metrics.evaluate(
+            metric_name, mocker.MagicMock(), turn_scope
+        )
+
+        assert score is None
+        assert (
+            reason == f"Ragas {metric_name} evaluation failed due to malformed "
+            "output from the LLM"
+        )

@@ -65,7 +65,7 @@ def test_empty_file_is_a_noop() -> None:
     """The checked-in file lists nothing, so no case is skipped."""
     text = Path("tests/golden/PENDING_REGEN").read_text(encoding="utf-8")
     pending = parse_pending_regen(text)
-    assert pending == {}
+    assert not pending
     assert pending_summary(pending) == "PENDING: none"
     node = _node("ragas_paths")
     skip_pending_items([node], pending)

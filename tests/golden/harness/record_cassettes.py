@@ -64,6 +64,7 @@ from typing import Any, Optional
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2]))  # repo root: run as a script
+HARD_CAP = 99  # absolute ceiling on upstream forwards; --max-requests can only lower it
 from tests.golden._normalize import normalize_addresses, normalize_obj  # noqa: E402
 from tests.golden.harness import cassette_proxy as cp  # noqa: E402
 from tests.golden.harness import judge_responses, judge_server  # noqa: E402
@@ -294,10 +295,15 @@ def estimate(r: Runner, jobs: int) -> dict:
             )
             for e in chat
         )
-        bound = len(chat) * RETRY_FACTOR + (
-            INTENTION_HEADROOM * RETRY_FACTOR
-            if m == "deepeval:conversation_completeness"
-            else 0
+        # Printed retry estimate only. The enforced upstream ceiling is HARD_CAP.
+        bound = min(
+            HARD_CAP,
+            len(chat) * RETRY_FACTOR
+            + (
+                INTENTION_HEADROOM * RETRY_FACTOR
+                if m == "deepeval:conversation_completeness"
+                else 0
+            ),
         )
         per[m] = {
             "chat": len(chat),
@@ -380,7 +386,10 @@ def main() -> int:
         "--max-requests",
         type=int,
         default=None,
-        help="hard cap on upstream requests (default: the computed upper bound)",
+        help=(
+            f"lower the upstream cap (1..{HARD_CAP}, default {HARD_CAP}); "
+            "a value above the hard cap is refused"
+        ),
     )
     ap.add_argument("--upstream", default=DEFAULT_UPSTREAM)
     ap.add_argument("--price-in", type=float, default=DEFAULT_PRICE_IN)
@@ -389,6 +398,12 @@ def main() -> int:
     ap.add_argument("--out", default=None, help="cassette path override")
     ap.add_argument("--keep-work", action="store_true")
     args = ap.parse_args()
+    if args.max_requests is not None and not 1 <= args.max_requests <= HARD_CAP:
+        log(
+            f"--max-requests must be from 1 to {HARD_CAP} "
+            f"(got {args.max_requests}); refusing before anything is sent"
+        )
+        return 2
 
     repo = Path(args.repo).resolve()
     fixture_dir = repo / "tests/golden/metrics/fixtures" / FIXTURE
@@ -417,7 +432,7 @@ def main() -> int:
     r = Runner(repo, fixture_dir, work, proxy)
     try:
         est = estimate(r, args.jobs)
-        cap = args.max_requests if args.max_requests is not None else est["upper_bound"]
+        cap = HARD_CAP if args.max_requests is None else args.max_requests
         print_estimate(est, cap, args.price_in, args.price_out)
         if est["sum_per_metric"] != est["full_run_chat"]:
             log("per-metric and full-run counts differ; refusing to continue")

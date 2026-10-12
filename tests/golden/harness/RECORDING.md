@@ -27,7 +27,7 @@ OPENAI_API_KEY=sk-... uv run --no-sync python tests/golden/harness/record_casset
 
 Flags: `--record-with-my-key` is required for record mode (it makes real, paid
 calls). The y/N prompt cannot be skipped, and a non-interactive run refuses.
-`--max-requests N` sets the cap. `--upstream URL`
+`--max-requests N` can only lower the cap (1..99). A value above 99 is refused before anything is sent. `--upstream URL`
 must be https. `--keep-work` keeps the scratch directory.
 
 ## Guarantees

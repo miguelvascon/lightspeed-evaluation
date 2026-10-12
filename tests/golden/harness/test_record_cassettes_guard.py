@@ -9,6 +9,7 @@ Run it inside a no-egress namespace too: ``unshare -rn``.
 from __future__ import annotations
 
 import io
+import json
 import sys
 import urllib.request
 from pathlib import Path
@@ -139,3 +140,86 @@ def test_dry_run_needs_no_flag_no_key_no_tty(
     with pytest.raises(_Reached):
         _main(monkeypatch, ["--dry-run"], _Stdin("", tty=False))
     assert calls == ["proxy", "estimate"]
+
+
+def test_max_requests_above_hard_cap_is_refused(
+    monkeypatch: pytest.MonkeyPatch, calls: list[str]
+) -> None:
+    """--max-requests 5000 exits 2 before the proxy, the estimate, or any send."""
+    assert (
+        _main(
+            monkeypatch,
+            ["--record-with-my-key", "--max-requests", "5000"],
+            _Stdin("y\n", tty=True),
+        )
+        == 2
+    )
+    assert calls == []
+
+
+class _Resp:
+    """In-memory urlopen body. Never opens a socket."""
+
+    status = 200
+
+    def read(self) -> bytes:
+        """Return a tiny JSON object."""
+        return b'{"ok":true}'
+
+    def __enter__(self) -> "_Resp":
+        """Context-manager entry."""
+        return self
+
+    def __exit__(self, *_a: object) -> None:
+        """Context-manager exit."""
+        return None
+
+
+def _trap_upstream(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Replace urlopen with a counter. The real opener is never called."""
+    calls: list[int] = []
+
+    def _urlopen(*_a: Any, **_k: Any) -> _Resp:
+        calls.append(1)
+        return _Resp()
+
+    monkeypatch.setattr(rc.cp.urllib.request, "urlopen", _urlopen)
+    return calls
+
+
+def _chat(judge: Any, n: int) -> tuple[int, dict]:
+    """One tagged chat completion carrying a distinct body."""
+    return judge.handle("/v1/chat/completions", json.dumps({"n": n}).encode())
+
+
+def test_forwarding_stops_at_hard_cap_when_more_requests_arrive(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cap of 5000 is clamped; only HARD_CAP requests are forwarded."""
+    calls = _trap_upstream(monkeypatch)
+    judge = rc.cp.RecordingJudge(lambda _path, _body: (200, {}))
+    judge.set_record("https://upstream.invalid/v1", "verification-not-a-real-key", 5000)
+    assert judge.cap == rc.HARD_CAP
+    for i in range(150):
+        _chat(judge, i)
+    assert len(calls) == rc.HARD_CAP
+    assert judge.forwarded == rc.HARD_CAP
+
+
+def test_request_100_is_not_forwarded(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Requests 1..99 are forwarded; request 100 is refused and stays local."""
+    calls = _trap_upstream(monkeypatch)
+    judge = rc.cp.RecordingJudge(lambda _path, _body: (200, {}))
+    judge.set_record(
+        "https://upstream.invalid/v1",
+        "verification-not-a-real-key",
+        rc.HARD_CAP,
+    )
+    statuses = [_chat(judge, i)[0] for i in range(rc.HARD_CAP)]
+    assert statuses == [200] * rc.HARD_CAP
+    assert len(calls) == rc.HARD_CAP
+    status, payload = _chat(judge, rc.HARD_CAP)
+    assert status == 400
+    assert "hard cap" in payload["error"]["message"]
+    assert len(calls) == rc.HARD_CAP
+    assert judge.forwarded == rc.HARD_CAP

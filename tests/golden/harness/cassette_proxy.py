@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Optional
 
 from tests.golden.harness.judge_server import replay_key
+from tests.golden.harness.record_cassettes import HARD_CAP
 
 KEY_PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9_\-]{16,}"),
@@ -37,6 +38,16 @@ TAGGED = re.compile(r"^/t/([^/]+)(/v1/.*)$")
 JSON_HEADERS = {"content-type": "application/json"}
 
 Responder = Callable[[str, dict], "tuple[int, dict]"]
+
+
+def _enforced_cap(cap: Optional[int]) -> int:
+    """Return the cap actually used for upstream forwards.
+
+    Never above ``HARD_CAP``, even if the caller asked for more.
+    """
+    if cap is None:
+        return HARD_CAP
+    return min(cap, HARD_CAP)
 
 
 def scrub_text(text: str, secret: Optional[str]) -> tuple[str, bool]:
@@ -70,9 +81,12 @@ class RecordingJudge:  # pylint: disable=too-many-instance-attributes
         self.mode, self.upstream, self._secret, self.cap = "fake", None, None, None
 
     def set_record(self, upstream: str, secret: str, cap: int) -> None:
-        """Forward chat completions upstream (record mode only)."""
+        """Forward chat completions upstream (record mode only).
+
+        ``cap`` is clamped to ``HARD_CAP``. Upstream forwarding never exceeds it.
+        """
         self.mode, self.upstream, self._secret = "record", upstream.rstrip("/"), secret
-        self.cap = cap
+        self.cap = _enforced_cap(cap)
 
     def reset(self) -> None:
         """Forget exchanges, ordinals and the abort state."""
@@ -121,10 +135,9 @@ class RecordingJudge:  # pylint: disable=too-many-instance-attributes
             source = "handwritten-embedding" if is_embedding else "handwritten"
         else:
             with self.lock:
-                if self.cap is not None and self.forwarded >= self.cap:
-                    self.abort_reason = (
-                        f"hard cap of {self.cap} upstream requests reached"
-                    )
+                limit = _enforced_cap(self.cap)
+                if self.forwarded >= limit:
+                    self.abort_reason = f"hard cap of {limit} upstream requests reached"
                     return 400, {"error": {"message": self.abort_reason}}
                 self.forwarded += 1
             status, resp = self._forward(path, raw)

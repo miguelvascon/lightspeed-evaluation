@@ -1,0 +1,61 @@
+# WP0c fixture: judge_happy_path (see system.yaml header)
+- conversation_group_id: custom_judge
+  description: custom LLM metrics, PASS and FAIL text from the judge
+  turns:
+    - turn_id: correct_answer
+      query: What is a Kubernetes pod?
+      response: A pod is the smallest deployable unit in Kubernetes. It groups one or more containers that share network and storage.
+      expected_response: A pod is the smallest deployable unit in Kubernetes and wraps one or more containers that share resources.
+      expected_intent: Explain what a Kubernetes pod is
+      turn_metrics: ["custom:answer_correctness", "custom:intent_eval"]
+    - turn_id: wrong_answer
+      query: What is a Kubernetes pod?
+      response: A pod is a virtual machine image that you upload to a container registry.
+      expected_response: A pod is the smallest deployable unit in Kubernetes and wraps one or more containers that share resources.
+      turn_metrics: ["custom:answer_correctness"]
+    - turn_id: openshift_workflow
+      query: Pod frontend-abc is in CrashLoopBackOff
+      response: |
+        ## Analysis
+        The container is OOMKilled because its memory limit is 128Mi.
+        ## Execution
+        Patched the deployment to raise the memory limit to 512Mi.
+        ## Verification
+        The pod has been Running for 10 minutes with no restarts.
+      expected_outcome: "Root cause: OOMKilled due to a 128Mi memory limit. Increase the memory limit to 512Mi."
+      turn_metrics: ["custom:openshift_agentic_run_evaluation_correctness"]
+
+- conversation_group_id: ragas_rag
+  description: every Ragas metric on one RAG turn
+  turns:
+    - turn_id: rag_turn
+      query: How do I list pods in a specific namespace?
+      response: Run `oc get pods -n <namespace>`, or `kubectl get pods -n <namespace>`.
+      contexts:
+        - The `oc get pods` command lists pods. Use the `-n` flag to select a namespace.
+        - kubectl and oc share most read-only commands such as get and describe.
+      expected_response: Use `oc get pods -n <namespace>`.
+      turn_metrics:
+        - "ragas:faithfulness"
+        - "ragas:response_relevancy"
+        - "ragas:context_recall"
+        - "ragas:context_precision"
+        - "ragas:context_utilization"
+        - "ragas:context_relevance"
+
+- conversation_group_id: deepeval_multi_turn
+  description: DeepEval conversational metrics and GEval (turn without steps, conversation with steps and rubric)
+  conversation_metrics:
+    - "deepeval:conversation_completeness"
+    - "deepeval:conversation_relevancy"
+    - "deepeval:knowledge_retention"
+    - "geval:conversation_coherence"
+  turns:
+    - turn_id: t1
+      query: My namespace is called payments. How do I see its pods?
+      response: Run `oc get pods -n payments`.
+      expected_response: "`oc get pods -n payments`"
+      turn_metrics: ["geval:technical_accuracy"]
+    - turn_id: t2
+      query: And how do I see the logs of the pod named api-1 there?
+      response: Run `oc logs api-1 -n payments`.

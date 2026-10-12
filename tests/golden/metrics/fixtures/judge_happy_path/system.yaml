@@ -1,0 +1,87 @@
+# WP0c fixture: judge_happy_path
+# Minimal happy-path judge cases whose responses Miguel records with the real
+# judge (tests/golden/harness/record_cassettes.py). Until then WP0c ships hand-written
+# responses for the same requests. Request bytes depend on everything below:
+# changing this file invalidates the cassette.
+core:
+  max_threads: 1
+  cache_enabled: false
+
+agents:
+  enabled: false
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.0
+  max_tokens: 512
+  timeout: 300
+  num_retries: 3
+  cache_enabled: false
+
+embedding:
+  provider: openai
+  model: text-embedding-3-small
+  cache_enabled: false
+
+metrics_metadata:
+  turn_level:
+    "custom:answer_correctness":
+      threshold: 0.75
+    "custom:intent_eval":
+      threshold: 1
+    "custom:openshift_agentic_run_evaluation_correctness":
+      threshold: 0.7
+    "ragas:faithfulness":
+      threshold: 0.7
+    "ragas:response_relevancy":
+      threshold: 0.7
+    "ragas:context_recall":
+      threshold: 0.7
+    "ragas:context_precision":
+      threshold: 0.7
+    "ragas:context_utilization":
+      threshold: 0.7
+    "ragas:context_relevance":
+      threshold: 0.7
+    "geval:technical_accuracy":
+      criteria: |
+        Assess whether the response provides technically accurate information,
+        commands, code, syntax, and follows relevant best practices.
+      evaluation_params:
+        - query
+        - response
+        - expected_response
+      threshold: 0.7
+  conversation_level:
+    "deepeval:conversation_completeness":
+      threshold: 0.8
+    "deepeval:conversation_relevancy":
+      threshold: 0.7
+    "deepeval:knowledge_retention":
+      threshold: 0.7
+    "geval:conversation_coherence":
+      criteria: |
+        Evaluate whether the conversation maintains context and provides coherent
+        responses across multiple turns.
+      evaluation_params:
+        - query
+        - response
+      evaluation_steps:
+        - "Check if the assistant remembers information from previous turns"
+        - "Verify responses build logically on previous context"
+      rubrics:
+        - score_range: [0, 4]
+          expected_outcome: "Loses context or contradicts earlier turns."
+        - score_range: [5, 10]
+          expected_outcome: "Keeps context and builds on earlier turns."
+      threshold: 0.6
+
+storage:
+  - type: file
+    output_dir: ./eval_output
+    base_filename: evaluation
+    enabled_outputs: [csv, json, txt]
+
+visualization:
+  enabled_graphs: []

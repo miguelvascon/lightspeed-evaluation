@@ -29,6 +29,47 @@ from lightspeed_evaluation.core.system.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
+# Evaluation-data field names that map to DeepEval's LLMTestCaseParams.
+_FIELD_NAME_MAPPING: dict[str, LLMTestCaseParams] = {
+    "query": LLMTestCaseParams.INPUT,
+    "response": LLMTestCaseParams.ACTUAL_OUTPUT,
+    "expected_response": LLMTestCaseParams.EXPECTED_OUTPUT,
+    "contexts": LLMTestCaseParams.CONTEXT,
+    "retrieval_context": LLMTestCaseParams.RETRIEVAL_CONTEXT,
+}
+
+
+def _recognized_evaluation_param(param: str) -> LLMTestCaseParams | None:
+    """Map one evaluation param to an enum value, or None if it is unknown.
+
+    Recognized names are the evaluation-data fields in ``_FIELD_NAME_MAPPING``
+    and ``LLMTestCaseParams`` names, matched case-insensitively with spaces
+    treated as underscores (for example ``INPUT`` or ``actual output``).
+    """
+    mapped = _FIELD_NAME_MAPPING.get(param)
+    if mapped is not None:
+        return mapped
+    try:
+        return LLMTestCaseParams[param.upper().replace(" ", "_")]
+    except (KeyError, AttributeError):
+        return None
+
+
+def _unsupported_evaluation_params(params: list[str]) -> list[str]:
+    """Return evaluation_params entries that are not recognized names."""
+    return [param for param in params if _recognized_evaluation_param(param) is None]
+
+
+def _unsupported_evaluation_params_reason(unsupported: list[str]) -> str:
+    """Build the config error that names the bad entries and the valid options."""
+    field_names = ", ".join(_FIELD_NAME_MAPPING)
+    enum_names = ", ".join(param.name for param in LLMTestCaseParams)
+    return (
+        "Invalid GEval configuration: "
+        f"unsupported evaluation_params {unsupported}. "
+        f"Valid options: {field_names}, or LLMTestCaseParams names: {enum_names}"
+    )
+
 
 class GEvalHandler:  # pylint: disable=R0903
     """Handler for configurable GEval metrics.
@@ -117,6 +158,10 @@ class GEvalHandler:  # pylint: disable=R0903
         except (ValueError, ValidationError, ConfigurationError) as e:
             return None, f"Invalid GEval configuration: {e!s}"
 
+        unsupported = _unsupported_evaluation_params(config.evaluation_params)
+        if unsupported:
+            return None, _unsupported_evaluation_params_reason(unsupported)
+
         # Convert validated rubrics to DeepEval Rubric objects
         rubrics: list[Rubric] | None = None
         if config.rubrics:
@@ -166,15 +211,6 @@ class GEvalHandler:  # pylint: disable=R0903
         Returns:
             List of LLMTestCaseParams enum values, or None if params are custom strings
         """
-        # Mapping from evaluation data field names to DeepEval enum values
-        field_name_mapping = {
-            "query": LLMTestCaseParams.INPUT,
-            "response": LLMTestCaseParams.ACTUAL_OUTPUT,
-            "expected_response": LLMTestCaseParams.EXPECTED_OUTPUT,
-            "contexts": LLMTestCaseParams.CONTEXT,
-            "retrieval_context": LLMTestCaseParams.RETRIEVAL_CONTEXT,
-        }
-
         # Return early if no parameters were supplied
         if not params:
             return None
@@ -184,24 +220,16 @@ class GEvalHandler:  # pylint: disable=R0903
 
         # Attempt to convert each string into a valid enum value
         for param in params:
-            # First try direct mapping from data field names
-            if param in field_name_mapping:
-                converted.append(field_name_mapping[param])
-            else:
-                # Fall back to trying to match as enum value directly
-                # (e.g., "INPUT", "ACTUAL_OUTPUT") for backward compatibility
-                try:
-                    enum_value = LLMTestCaseParams[param.upper().replace(" ", "_")]
-                    converted.append(enum_value)
-                except (KeyError, AttributeError):
-                    # Not a valid enum - these are custom params, skip them
-                    logger.debug(
-                        "Skipping custom evaluation_param '%s' - "
-                        "not a valid field name or LLMTestCaseParams enum. "
-                        "GEval will auto-detect required fields.",
-                        param,
-                    )
-                    return None
+            enum_value = _recognized_evaluation_param(param)
+            if enum_value is None:
+                # Unrecognized names are a config error, rejected in evaluate().
+                logger.debug(
+                    "Skipping unrecognized evaluation_param '%s' - "
+                    "not a valid field name or LLMTestCaseParams enum.",
+                    param,
+                )
+                return None
+            converted.append(enum_value)
 
         # Return the successfully converted list, or None if it ended up empty
         return converted if converted else None
@@ -267,7 +295,7 @@ class GEvalHandler:  # pylint: disable=R0903
                     LLMTestCaseParams.INPUT,
                     LLMTestCaseParams.ACTUAL_OUTPUT,
                 ]
-            # else: leave unset so GEval can auto-detect from custom strings
+            # else: unrecognized params are rejected in evaluate()
         else:
             metric_kwargs["evaluation_params"] = converted_params
 

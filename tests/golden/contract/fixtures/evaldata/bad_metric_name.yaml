@@ -1,0 +1,6 @@
+- conversation_group_id: bad
+  turns:
+  - turn_id: t1
+    query: hi
+    turn_metrics:
+    - nocolon

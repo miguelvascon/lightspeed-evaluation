@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "YAML root must be a list or a dict with 'conversations' key, got int",
+  "validation_errors": []
+}

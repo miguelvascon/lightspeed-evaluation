@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "Validation error in conversation 'bad': turns -> 0 -> turn_metrics: Value error, Turn metric \"nocolon\" must be in format \"framework:metric_name\"",
+  "validation_errors": []
+}

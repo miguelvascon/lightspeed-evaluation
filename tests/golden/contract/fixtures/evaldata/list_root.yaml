@@ -1,0 +1,9 @@
+- conversation_group_id: alpha
+  tag: keywords
+  turns:
+  - turn_id: t1
+    query: What is a namespace?
+    response: A namespace provides isolation.
+    expected_keywords:
+    - - namespace
+      - isolation

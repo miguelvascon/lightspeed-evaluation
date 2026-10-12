@@ -1,0 +1,7 @@
+{
+  "ok": false,
+  "error": "Evaluation data validation failed",
+  "validation_errors": [
+    "Conversation unknown, Turn t1: Unknown turn metric 'custom:not_defined'"
+  ]
+}

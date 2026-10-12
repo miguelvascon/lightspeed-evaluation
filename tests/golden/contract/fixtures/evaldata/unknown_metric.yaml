@@ -1,0 +1,7 @@
+- conversation_group_id: unknown
+  turns:
+  - turn_id: t1
+    query: hi
+    response: hello
+    turn_metrics:
+    - custom:not_defined

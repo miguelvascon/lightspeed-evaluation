@@ -1,0 +1,31 @@
+- conversation_group_id: alpha
+  tag: keywords
+  turns:
+  - turn_id: t1
+    query: What is a namespace?
+    response: A namespace provides isolation.
+    expected_response: A namespace provides isolation.
+    expected_keywords:
+    - - namespace
+      - isolation
+- conversation_group_id: beta
+  tag: other
+  turns:
+  - turn_id: t1
+    query: What is a namespace?
+    response: A namespace provides isolation.
+    expected_response: A project provides isolation.
+    expected_keywords:
+    - - namespace
+      - openshift
+- conversation_group_id: gamma
+  tag:
+  - keywords
+  - other
+  turns:
+  - turn_id: t1
+    query: What is a namespace?
+    response: A namespace provides isolation.
+    expected_response: A namespace provides isolation.
+    expected_keywords:
+    - - namespace

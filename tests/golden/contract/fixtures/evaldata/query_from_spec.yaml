@@ -1,0 +1,5 @@
+- conversation_group_id: spec
+  turns:
+  - turn_id: t1
+    openshift_agentic_run_spec:
+      request: restart the node

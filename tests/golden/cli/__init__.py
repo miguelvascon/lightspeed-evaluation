@@ -1,0 +1,1 @@
+"""Offline CLI report goldens."""

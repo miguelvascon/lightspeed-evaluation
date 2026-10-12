@@ -12,6 +12,8 @@ import pytest
 from tests.golden._compare import (
     PendingRegenError,
     apply_pending,
+    assert_pending_empty,
+    main,
     parse_pending_regen,
     pending_protocol_error,
     pending_review_warning,
@@ -151,6 +153,27 @@ def test_rename_out_of_src_blocks_both_guards(tmp_path: Path) -> None:
     assert regen_guard_blocks(two_dot, []) is True
     assert pending_protocol_error(_LISTED, "", folded) is None
     assert pending_protocol_error(_LISTED, "", opened) is not None
+
+
+def test_require_empty_blocks_a_release() -> None:
+    """G0 rejects a listed case. The checked-in file passes ``--require-empty``."""
+    with pytest.raises(PendingRegenError, match="ragas_paths RM-15"):
+        assert_pending_empty(_LISTED)
+    assert main(["--require-empty"]) == 0
+    assert main([]) == 2
+
+
+def test_require_empty_rejects_a_missing_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Deleting ``PENDING_REGEN`` fails G0. An empty file in that path passes."""
+    monkeypatch.chdir(tmp_path)
+    assert main(["--require-empty"]) == 1
+    assert "PENDING_REGEN is missing" in capsys.readouterr().err
+    pending = tmp_path / "tests" / "golden"
+    pending.mkdir(parents=True)
+    (pending / "PENDING_REGEN").write_text("", encoding="utf-8")
+    assert main(["--require-empty"]) == 0
 
 
 def test_three_dot_ignores_src_that_landed_on_main(tmp_path: Path) -> None:

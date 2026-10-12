@@ -81,6 +81,10 @@ The framework uses "OpenshiftAgenticRun" naming for OpenShift-specific agentic w
 - `custom:openshift_agentic_run_status`, `custom:openshift_agentic_run_evaluation_correctness`
 - Agent type: `"openshift_agentic_run"`
 
+### 7. No Force-Pushes
+
+Do not force-push, including `--force-with-lease` and including your own branches, unless the user explicitly clears it first. Update an already-pushed branch by merging the target branch forward (`git merge`), then push that merge commit normally.
+
 ---
 
 ## Project Overview

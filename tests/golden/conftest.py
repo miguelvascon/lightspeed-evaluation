@@ -37,6 +37,12 @@ from typing import Any, cast
 
 import pytest
 
+from tests.golden._compare import (
+    parse_pending_regen,
+    pending_skip_reason,
+    pending_summary,
+)
+
 _FIXED = {
     "PYTHONHASHSEED": "0",
     "TZ": "UTC",
@@ -62,6 +68,8 @@ _UNSET = frozenset(
 )
 _STATE: dict[str, str] = {}
 _ORDER_ONLY: list[str] = []
+_PENDING: dict[str, str] = {}
+_PENDING_KEY = pytest.StashKey[dict[str, str]]()
 _REPO = Path(__file__).resolve().parents[2]
 _SPAWN = [subprocess.Popen]
 
@@ -211,9 +219,41 @@ def pytest_configure(config: pytest.Config) -> None:
             "golden: Characterization tests that require the golden "
             "determinism env (run by golden.yaml)",
         )
+    if "golden_case" not in known:
+        config.addinivalue_line(
+            "markers",
+            "golden_case(case_id): Golden case id skipped while listed in "
+            "tests/golden/PENDING_REGEN",
+        )
+
+
+def skip_pending_items(items: list[Any], pending: Mapping[str, str]) -> None:
+    """Skip items whose ``golden_case`` id is listed in ``PENDING_REGEN``."""
+    for item in items:
+        marker = item.get_closest_marker("golden_case")
+        if marker is None or not marker.args:
+            continue
+        reason = pending_skip_reason(str(marker.args[0]), pending)
+        if reason is not None:
+            item.add_marker(pytest.mark.skip(reason=reason))
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    """Load ``PENDING_REGEN`` and skip the listed cases."""
+    path = Path(__file__).resolve().parent / "PENDING_REGEN"
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    pending = parse_pending_regen(text)
+    _PENDING.clear()
+    _PENDING.update(pending)
+    config.stash[_PENDING_KEY] = dict(pending)
+    skip_pending_items(items, pending)
 
 
 def pytest_terminal_summary(terminalreporter: Any) -> None:
-    """Print the ORDER-ONLY digest the DS copies into the sign-off comment."""
+    """Print ORDER-ONLY and PENDING lines for the golden job summary."""
     digest = ",".join(_ORDER_ONLY) if _ORDER_ONLY else "none"
     terminalreporter.write_line(f"ORDER-ONLY digest: {digest}")
+    pending = terminalreporter.config.stash.get(_PENDING_KEY, _PENDING)
+    terminalreporter.write_line(pending_summary(pending))

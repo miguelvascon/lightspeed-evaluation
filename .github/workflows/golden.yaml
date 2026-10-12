@@ -25,12 +25,16 @@ jobs:
         run: |
           set -eu
           git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" > /tmp/changed.txt
+          git diff --name-only "${BASE_SHA}...${HEAD_SHA}" > /tmp/pr-changed.txt
+          git show "${BASE_SHA}:tests/golden/PENDING_REGEN" > /tmp/pending.base 2>/dev/null || true
+          git show "${HEAD_SHA}:tests/golden/PENDING_REGEN" > /tmp/pending.head 2>/dev/null || true
           python3 - <<'PY'
           import os
           import sys
           from pathlib import Path
 
           sys.path.insert(0, ".")
+          from tests.golden._compare import pending_protocol_error
           from tests.golden._regen import regen_guard_blocks
 
           changed = Path("/tmp/changed.txt").read_text(encoding="utf-8").splitlines()
@@ -40,6 +44,14 @@ jobs:
                   "golden-regen guard: PR touches src/ and "
                   "tests/golden/{expected,cassettes,fixtures}"
               )
+          pr_paths = Path("/tmp/pr-changed.txt").read_text(encoding="utf-8").splitlines()
+          message = pending_protocol_error(
+              Path("/tmp/pending.base").read_text(encoding="utf-8"),
+              Path("/tmp/pending.head").read_text(encoding="utf-8"),
+              pr_paths,
+          )
+          if message:
+              sys.exit(message)
           PY
 
   golden:
@@ -62,6 +74,25 @@ jobs:
       LS_GOLDEN_ORDER_ONLY_OK: ${{ (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'golden-order-only-ok')) && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
+      - name: List PENDING cases
+        run: |
+          python3 - <<'PY'
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, ".")
+          from tests.golden._compare import parse_pending_regen, pending_summary
+
+          path = Path("tests/golden/PENDING_REGEN")
+          text = path.read_text(encoding="utf-8") if path.is_file() else ""
+          line = pending_summary(parse_pending_regen(text))
+          print(line)
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as handle:
+                  handle.write(line + "\n")
+          PY
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}

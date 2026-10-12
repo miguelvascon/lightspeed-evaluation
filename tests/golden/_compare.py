@@ -2,11 +2,10 @@
 
 ``rate_fixture`` returns ``EXACT``, ``ORDER-ONLY``, or ``FAIL``.
 
-``ORDER-ONLY`` means the exact compare failed, the sorted fallback is clean,
-and the only leftovers are bootstrap CI values and PNG bytes. A PNG-only
-difference on an otherwise exact fixture is ``FAIL`` when PNG bytes are in
-the comparison (the 3.12 leg). ``passes`` accepts ``ORDER-ONLY`` only when
-``golden-order-only-ok`` is among the labels.
+``ORDER-ONLY`` means the pinned-order sequences differ and the sorted
+sequences match. Bootstrap CI values and PNG bytes may differ in that case.
+A fixture whose only difference is CI or PNG rates ``FAIL``. ``passes``
+accepts ``ORDER-ONLY`` only when ``golden-order-only-ok`` is among the labels.
 """
 
 from __future__ import annotations
@@ -143,9 +142,13 @@ def rate_fixture(actual: Any, expected: Any, *, compare_png: bool | None = None)
     ):
         return "FAIL"
     stripped = frozenset({"png", "confidence_interval"})
-    if _dump(_canon(_drop(left, stripped))) == _dump(_canon(_drop(right, stripped))):
-        return "ORDER-ONLY"
-    return "FAIL"
+    left_s, right_s = _drop(left, stripped), _drop(right, stripped)
+    if _dump(_canon(left_s)) != _dump(_canon(right_s)):
+        return "FAIL"
+    # Q-2: CI/PNG leftovers are excused only by an actual cross-conversation reorder.
+    if _dump(left_s) == _dump(right_s):
+        return "FAIL"
+    return "ORDER-ONLY"
 
 
 def order_only_digest(actual: Any, expected: Any) -> str:

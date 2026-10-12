@@ -136,6 +136,39 @@ def test_real_change_fails_even_with_label(mutate: str) -> None:
     assert passes(rating, [ORDER_ONLY_LABEL]) is False
 
 
+def _swap_conversations(source: dict[str, Any]) -> dict[str, Any]:
+    """Move the last conversation ahead of the others. Within-turn order stays."""
+    actual = copy.deepcopy(source)
+    actual["rows"] = [actual["rows"][2], actual["rows"][0], actual["rows"][1]]
+    return actual
+
+
+@pytest.mark.parametrize(
+    ("reorder", "change_ci", "change_score", "expected_rating"),
+    [
+        pytest.param(False, True, False, "FAIL", id="ci-same-order"),
+        pytest.param(True, True, False, "ORDER-ONLY", id="reorder-and-ci"),
+        pytest.param(True, False, False, "ORDER-ONLY", id="reorder-ci-unchanged"),
+        pytest.param(True, False, True, "FAIL", id="reorder-and-score"),
+    ],
+)
+def test_ci_excused_only_when_order_moved(
+    reorder: bool,
+    change_ci: bool,
+    change_score: bool,
+    expected_rating: str,
+) -> None:
+    """CI is ORDER-ONLY only when the pinned order moved and the sort matches."""
+    expected = _base()
+    actual = _swap_conversations(expected) if reorder else copy.deepcopy(expected)
+    if change_ci:
+        stats = actual["summary"]["by_metric"]["keywords"]["score_statistics"]
+        stats["confidence_interval"] = {"low": 0.1, "mean": 0.4, "high": 0.7}
+    if change_score:
+        actual["rows"][0]["score"] = 0.25
+    assert rate_fixture(actual, expected, compare_png=True) == expected_rating
+
+
 def test_png_only_diff_fails_on_the_pinned_leg() -> None:
     """PNG bytes alone are FAIL when compared, and ignored off the 3.12 leg."""
     expected = _base()

@@ -14,7 +14,8 @@ import hashlib
 import json
 import os
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 from tests.golden._normalize import normalize_obj
@@ -162,6 +163,17 @@ _RM = re.compile(r"RM-[1-9][0-9]*\Z")
 _PENDING_PATH = "tests/golden/PENDING_REGEN"
 
 
+def match_case_id(value: object) -> str | None:
+    """Return ``value`` when it is a ``[a-z][a-z0-9_]*`` case id."""
+    if isinstance(value, str) and _CASE_ID.match(value):
+        return value
+    return None
+
+
+def _touches_src(paths: Sequence[str]) -> bool:
+    return any(path == "src" or path.startswith("src/") for path in paths)
+
+
 class PendingRegenError(ValueError):
     """A ``PENDING_REGEN`` line is not ``case_id RM-<number>``."""
 
@@ -240,9 +252,58 @@ def pending_protocol_error(
         )
     if head:
         return "the golden-regen PR must empty PENDING_REGEN"
-    if any(path == "src" or path.startswith("src/") for path in pr_paths):
+    if _touches_src(pr_paths):
         return "the golden-regen PR must not change src/"
     return None
+
+
+def pending_review_warning(
+    base_text: str, head_text: str, pr_paths: Sequence[str]
+) -> str | None:
+    """Return the DS-review warning when a ``src/`` PR adds PENDING entries."""
+    base = parse_pending_regen(base_text)
+    head = parse_pending_regen(head_text)
+    added = {
+        case_id: rm_number
+        for case_id, rm_number in head.items()
+        if base.get(case_id) != rm_number
+    }
+    if not added or not _touches_src(pr_paths):
+        return None
+    body = ", ".join(f"{case_id} {added[case_id]}" for case_id in sorted(added))
+    return (
+        "DS review required: this PR changes src/ and adds PENDING_REGEN "
+        f"entries ({body}). The DS is not a GitHub reviewer; this warning "
+        "is the review control."
+    )
+
+
+def publish_review_warning() -> None:
+    """Print the DS warning and append the golden job-summary block."""
+    warning = pending_review_warning(
+        Path("/tmp/pending.base").read_text(encoding="utf-8"),
+        Path("/tmp/pending.head").read_text(encoding="utf-8"),
+        Path("/tmp/pr-changed.txt").read_text(encoding="utf-8").splitlines(),
+    )
+    if warning is None:
+        return
+    print(f"::warning::{warning}")
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not summary:
+        return
+    with open(summary, "a", encoding="utf-8") as handle:
+        handle.write("## DS review required\n\n" + warning + "\n")
+
+
+def reject_unknown_cases(pending: Mapping[str, str], known: Collection[str]) -> None:
+    """Raise ``PendingRegenError`` when an id is not a known golden case."""
+    unknown = sorted(set(pending) - set(known))
+    if unknown:
+        listed = ", ".join(unknown)
+        raise PendingRegenError(
+            f"unknown PENDING_REGEN case id(s): {listed}. "
+            "Every id must be a collected case_id or a fixtures/ directory name"
+        )
 
 
 def _keep(obj: Any) -> Any:

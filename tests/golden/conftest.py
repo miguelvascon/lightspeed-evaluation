@@ -38,9 +38,11 @@ from typing import Any, cast
 import pytest
 
 from tests.golden._compare import (
+    match_case_id,
     parse_pending_regen,
     pending_skip_reason,
     pending_summary,
+    reject_unknown_cases,
 )
 
 _FIXED = {
@@ -227,13 +229,66 @@ def pytest_configure(config: pytest.Config) -> None:
         )
 
 
-def skip_pending_items(items: list[Any], pending: Mapping[str, str]) -> None:
-    """Skip items whose ``golden_case`` id is listed in ``PENDING_REGEN``."""
+def case_id_from_item(item: Any) -> str | None:
+    """Return the case id WP0c must expose, or ``None`` for a harness test.
+
+    ``golden_case`` wins. Otherwise use a ``case_id`` parameter, or the
+    directory name of a parameter path under ``fixtures/``. A
+    ``fixtures/<id>/`` dir with ``system.yaml`` or ``eval_data.yaml`` is known
+    even with no parameter. Harness tests use none of these and are not cases.
+    """
+    marker = item.get_closest_marker("golden_case")
+    if marker is not None and marker.args:
+        return match_case_id(marker.args[0])
+    params = getattr(getattr(item, "callspec", None), "params", None)
+    if not isinstance(params, Mapping):
+        return None
+    named = match_case_id(params.get("case_id"))
+    if named is not None:
+        return named
+    for value in params.values():
+        found = _fixture_dirname(value)
+        if found is not None:
+            return found
+    return None
+
+
+def _fixture_dirname(value: object) -> str | None:
+    if isinstance(value, Path):
+        raw = value
+    elif isinstance(value, str):
+        raw = Path(value)
+    else:
+        return None
+    if "fixtures" not in raw.parts:
+        return None
+    return match_case_id(raw.name)
+
+
+def known_case_ids(items: list[Any], root: Path) -> set[str]:
+    """Return collected case ids plus fixture dirs that hold a case file."""
+    found: set[str] = set()
     for item in items:
-        marker = item.get_closest_marker("golden_case")
-        if marker is None or not marker.args:
+        case_id = case_id_from_item(item)
+        if case_id is not None:
+            found.add(case_id)
+    for filename in ("system.yaml", "eval_data.yaml"):
+        for path in root.rglob(filename):
+            if "fixtures" not in path.parts:
+                continue
+            case_id = match_case_id(path.parent.name)
+            if case_id is not None:
+                found.add(case_id)
+    return found
+
+
+def skip_pending_items(items: list[Any], pending: Mapping[str, str]) -> None:
+    """Skip a listed case. The id is derived from the test, not a marker."""
+    for item in items:
+        case_id = case_id_from_item(item)
+        if case_id is None:
             continue
-        reason = pending_skip_reason(str(marker.args[0]), pending)
+        reason = pending_skip_reason(case_id, pending)
         if reason is not None:
             item.add_marker(pytest.mark.skip(reason=reason))
 
@@ -241,14 +296,17 @@ def skip_pending_items(items: list[Any], pending: Mapping[str, str]) -> None:
 def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
-    """Load ``PENDING_REGEN`` and skip the listed cases."""
-    path = Path(__file__).resolve().parent / "PENDING_REGEN"
+    """Load ``PENDING_REGEN``, reject unknown ids, and skip listed cases."""
+    root = Path(__file__).resolve().parent
+    path = root / "PENDING_REGEN"
     text = path.read_text(encoding="utf-8") if path.is_file() else ""
     pending = parse_pending_regen(text)
+    golden = [item for item in items if item.get_closest_marker("golden") is not None]
+    reject_unknown_cases(pending, known_case_ids(golden, root))
     _PENDING.clear()
     _PENDING.update(pending)
     config.stash[_PENDING_KEY] = dict(pending)
-    skip_pending_items(items, pending)
+    skip_pending_items(golden, pending)
 
 
 def pytest_terminal_summary(terminalreporter: Any) -> None:

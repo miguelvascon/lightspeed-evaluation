@@ -24,8 +24,10 @@ jobs:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
         run: |
           set -eu
-          git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" > /tmp/changed.txt
-          git diff --name-only "${BASE_SHA}...${HEAD_SHA}" > /tmp/pr-changed.txt
+          # --no-renames keeps a moved-away src/ path. Without it, git mv
+          # folds the old path and both guards miss the src/ change.
+          git diff --name-only --no-renames "${BASE_SHA}" "${HEAD_SHA}" > /tmp/changed.txt
+          git diff --name-only --no-renames "${BASE_SHA}...${HEAD_SHA}" > /tmp/pr-changed.txt
           git show "${BASE_SHA}:tests/golden/PENDING_REGEN" > /tmp/pending.base 2>/dev/null || true
           git show "${HEAD_SHA}:tests/golden/PENDING_REGEN" > /tmp/pending.head 2>/dev/null || true
           python3 - <<'PY'
@@ -74,6 +76,8 @@ jobs:
       LS_GOLDEN_ORDER_ONLY_OK: ${{ (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'golden-order-only-ok')) && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: List PENDING cases
         run: |
           python3 - <<'PY'
@@ -93,6 +97,19 @@ jobs:
               with open(summary, "a", encoding="utf-8") as handle:
                   handle.write(line + "\n")
           PY
+      - name: DS review warning for new PENDING entries
+        if: github.event_name == 'pull_request' && matrix.python-version == '3.12'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          # Three-dot, --no-renames: additions are what this PR introduces.
+          MERGE=$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")
+          git diff --name-only --no-renames "${BASE_SHA}...${HEAD_SHA}" > /tmp/pr-changed.txt
+          git show "${MERGE}:tests/golden/PENDING_REGEN" > /tmp/pending.base 2>/dev/null || true
+          git show "${HEAD_SHA}:tests/golden/PENDING_REGEN" > /tmp/pending.head 2>/dev/null || true
+          python3 -c 'from tests.golden._compare import publish_review_warning; publish_review_warning()'
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}

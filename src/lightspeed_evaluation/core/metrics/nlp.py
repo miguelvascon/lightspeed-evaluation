@@ -271,7 +271,8 @@ class NLPMetrics:  # pylint: disable=too-few-public-methods
 
         bleu = BLEU(max_ngram_order=max_ngram)
         result = bleu.corpus_score([response], [[reference]])
-        score = result.score / 100.0  # sacrebleu returns 0-100 scale
+        # sacrebleu returns 0-100; float error can exceed 100 on identical text
+        score = min(1.0, max(0.0, result.score / 100.0))
 
         logger.debug("BLEU-%d score computed: %.4f", max_ngram, score)
         return score, f"NLP BLEU-{max_ngram}: {score:.4f}"

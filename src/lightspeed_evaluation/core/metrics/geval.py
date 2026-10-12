@@ -509,10 +509,13 @@ class GEvalHandler:  # pylint: disable=R0903
     ) -> dict[str, Any] | None:
         """Extract GEval configuration from metadata using MetricManager.
 
-         The method uses MetricManager to check multiple sources in priority order:
-            1. Turn-level metadata (runtime override from evaluation YAML)
-            2. Conversation-level metadata (runtime override from evaluation YAML)
-            3. System default metadata (from system.yaml metrics_metadata)
+        The method uses MetricManager to check multiple sources in priority order:
+           1. Turn-level metadata (runtime override from evaluation YAML)
+           2. Conversation-level metadata (runtime override from evaluation YAML)
+           3. System default metadata (from system.yaml metrics_metadata)
+
+        ``geval:<name>`` is read first. ``deepeval:<name>`` is used only when
+        that lookup is empty.
 
          Args:
             metric_name (str):
@@ -529,25 +532,24 @@ class GEvalHandler:  # pylint: disable=R0903
             dict[str, Any] | None:
                 The GEval configuration dictionary if found, otherwise None.
         """
-        metric_key = f"geval:{metric_name}"
         level = MetricLevel.CONVERSATION if is_conversation else MetricLevel.TURN
 
-        # Use MetricManager to get metadata with proper priority hierarchy
-        metadata = self.metric_manager.get_metric_metadata(
-            metric_identifier=metric_key,
-            level=level,
-            conv_data=conv_data,
-            turn_data=turn_data,
-        )
-
-        if metadata:
-            logger.debug(
-                "Found metadata for metric '%s' via MetricManager", metric_name
+        # geval:<name> first; deepeval:<name> is the fall-through key.
+        for metric_key in (f"geval:{metric_name}", f"deepeval:{metric_name}"):
+            metadata = self.metric_manager.get_metric_metadata(
+                metric_identifier=metric_key,
+                level=level,
+                conv_data=conv_data,
+                turn_data=turn_data,
             )
-            return metadata
+            if metadata:
+                logger.debug(
+                    "Found metadata for metric '%s' via MetricManager", metric_name
+                )
+                return metadata
 
         logger.warning(
             "Metric '%s' not found in runtime or system metadata.",
-            metric_key,
+            f"geval:{metric_name}",
         )
         return None

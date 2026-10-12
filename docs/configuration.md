@@ -304,6 +304,8 @@ In case of error it is marked `ERROR`.
 
 For **user-defined criteria** metrics (`geval:...`), you can define custom evaluation criteria without code changes. These use DeepEval’s GEval under the hood:
 
+A `deepeval:<name>` that isn't a built-in DeepEval metric runs as GEval. Its config is read from `geval:<name>` first, then `deepeval:<name>`.
+
 - **`criteria`** (required): Natural-language description of what to evaluate. Used to generate evaluation steps when `evaluation_steps` is not provided.
 - **`evaluation_params`**: List of field names to include (e.g. `query`, `response`, `expected_response`). Auto-detect is not supported. Unrecognized values are a configuration error (the ERROR reason lists the valid options).
 - **`evaluation_steps`** (optional): List of step-by-step instructions the LLM judge follows. If omitted, steps are generated from `criteria`. When provided together with `rubrics`, both are used: steps define how to evaluate, rubrics define score-range boundaries; neither overrides the other.

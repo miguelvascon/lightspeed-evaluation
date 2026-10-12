@@ -71,6 +71,8 @@ jobs:
         run: uv sync --frozen --group dev --extra nlp-metrics
       - name: Block non-loopback egress
         run: |
+          sudo iptables-save > "${RUNNER_TEMP}/iptables.golden"
+          sudo ip6tables-save > "${RUNNER_TEMP}/ip6tables.golden"
           sudo iptables -A OUTPUT -o lo -j ACCEPT
           sudo iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
           sudo iptables -A OUTPUT -j REJECT
@@ -84,3 +86,12 @@ jobs:
           echo "OPENAI_BASE_URL=http://127.0.0.1:9/v1" >> "$GITHUB_ENV"
       - name: Run golden tests
         run: uv run pytest tests/golden -m golden
+      - name: Restore runner egress
+        if: always()
+        run: |
+          # The runner reports completion on a new connection. Keep the block
+          # only while the golden tests run.
+          if [ -f "${RUNNER_TEMP}/iptables.golden" ]; then
+            sudo iptables-restore < "${RUNNER_TEMP}/iptables.golden"
+            sudo ip6tables-restore < "${RUNNER_TEMP}/ip6tables.golden"
+          fi

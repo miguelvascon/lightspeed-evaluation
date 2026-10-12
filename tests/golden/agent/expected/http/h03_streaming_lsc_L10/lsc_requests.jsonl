@@ -1,0 +1,6 @@
+{"body": "{\"query\":\"tools without args legacy\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/streaming_query", "seq": 1}
+{"body": "{\"query\":\"tools without args flat\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/streaming_query", "seq": 2}
+{"body": "{\"query\":\"no turn complete\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/streaming_query", "seq": 3}
+{"body": "{\"query\":\"no start event\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/streaming_query", "seq": 4}
+{"body": "{\"query\":\"error event\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/streaming_query", "seq": 5}
+{"body": "{\"query\":\"http 422\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/streaming_query", "seq": 6}

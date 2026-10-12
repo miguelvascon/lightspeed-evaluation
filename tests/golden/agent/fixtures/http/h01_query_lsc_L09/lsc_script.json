@@ -1,0 +1,85 @@
+{
+ "routes": [
+  {
+   "path": "/v1/query",
+   "prompt": "first question",
+   "match_conversation_id": "absent",
+   "new_conversation_id": "conv-query-002",
+   "responses": [
+    {
+     "turn": {
+      "response": "first answer",
+      "tool_calls": [
+       {
+        "tool_name": "no_args_tool"
+       },
+       {
+        "tool_name": "null_args_tool",
+        "arguments": null
+       },
+       {
+        "arguments": {
+         "x": 1
+        }
+       }
+      ],
+      "input_tokens": 2,
+      "output_tokens": 2
+     }
+    }
+   ]
+  },
+  {
+   "path": "/v1/query",
+   "prompt": "second question",
+   "match_conversation_id": "conv-query-002",
+   "responses": [
+    {
+     "turn": {
+      "response": "second answer",
+      "input_tokens": 3,
+      "output_tokens": 2
+     }
+    }
+   ]
+  },
+  {
+   "path": "/v1/query",
+   "prompt": "list pods in payments",
+   "responses": [
+    {
+     "status": 200,
+     "json": {
+      "conversation_id": "conv-query-001",
+      "response": "  Pods in payments: api-1  ",
+      "tool_calls": [
+       {
+        "name": "get_pods",
+        "args": {
+         "namespace": "payments"
+        },
+        "result": "api-1 Running"
+       },
+       {
+        "tool_name": "get_logs",
+        "arguments": {
+         "pod": "api-1"
+        }
+       },
+       {
+        "name": "no_args_tool"
+       },
+       {
+        "args": {
+         "x": 1
+        }
+       }
+      ],
+      "input_tokens": 7,
+      "output_tokens": 11
+     }
+    }
+   ]
+  }
+ ]
+}

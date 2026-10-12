@@ -1,0 +1,318 @@
+{
+  "timestamp": "<TS>",
+  "total_evaluations": 4,
+  "summary_stats": {
+    "overall": {
+      "TOTAL": 4,
+      "PASS": 3,
+      "FAIL": 1,
+      "ERROR": 0,
+      "SKIPPED": 0,
+      "pass_rate": 75.0,
+      "fail_rate": 25.0,
+      "error_rate": 0.0,
+      "skipped_rate": 0.0,
+      "total_judge_llm_input_tokens": 0,
+      "total_judge_llm_output_tokens": 0,
+      "total_judge_llm_tokens": 0,
+      "total_embedding_tokens": 0,
+      "total_api_input_tokens": 12,
+      "total_api_output_tokens": 15,
+      "total_api_tokens": 27,
+      "total_tokens": 27
+    },
+    "by_metric": {
+      "custom:keywords_eval": {
+        "pass": 3,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 3,
+          "mean": 1.0,
+          "median": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 1.0,
+            "mean": 1.0,
+            "high": 1.0,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "custom:tool_eval": {
+        "pass": 0,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 0.0,
+        "fail_rate": 100.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 1,
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "confidence_interval": null
+        }
+      }
+    },
+    "by_conversation": {
+      "query_tools": {
+        "pass": 1,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 50.0,
+        "fail_rate": 50.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "query_turn_form": {
+        "pass": 2,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      }
+    },
+    "by_tag": {
+      "eval": {
+        "pass": 3,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 75.0,
+        "fail_rate": 25.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 4,
+          "mean": 0.75,
+          "median": 1.0,
+          "std": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 0.5,
+            "mean": 0.75,
+            "high": 1.25,
+            "confidence_level": 95.0
+          }
+        }
+      }
+    },
+    "agent_latency_stats": {
+      "count": 3,
+      "mean": "<T>",
+      "median": "<T>",
+      "std": "<T>",
+      "min": "<T>",
+      "max": "<T>",
+      "p95": "<T>",
+      "p99": "<T>"
+    }
+  },
+  "configuration": {
+    "llm": {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "ssl_verify": true,
+      "ssl_cert_file": null,
+      "temperature": 0.0,
+      "max_tokens": 512,
+      "timeout": 300,
+      "num_retries": 3,
+      "cache_enabled": false,
+      "parameters": {
+        "temperature": 0.0,
+        "max_completion_tokens": 512
+      }
+    },
+    "embedding": {
+      "provider": "openai",
+      "model": "text-embedding-3-small",
+      "provider_kwargs": null,
+      "cache_enabled": false
+    },
+    "api": {
+      "api_base": "http://localhost:8080",
+      "version": "v1",
+      "endpoint_type": "streaming",
+      "timeout": 300,
+      "provider": null,
+      "model": null,
+      "no_tools": null,
+      "system_prompt": null,
+      "extra_request_params": null,
+      "cache_enabled": false,
+      "num_retries": 3,
+      "enabled": true,
+      "mcp_headers": null
+    },
+    "agents": {
+      "enabled": true,
+      "default": {
+        "agent": [
+          "lsc"
+        ],
+        "agent_config": null,
+        "repeat": 1,
+        "parallel": false
+      },
+      "agents": {
+        "lsc": {
+          "description": null,
+          "api_base": "http://127.0.0.1:<PORT>/lsc",
+          "version": "v1",
+          "endpoint_type": "query",
+          "timeout": 10,
+          "provider": "openai",
+          "model": "gpt-4o-mini",
+          "no_tools": null,
+          "system_prompt": null,
+          "extra_request_params": null,
+          "cache_dir": ".caches/agent/lsc",
+          "cache_enabled": false,
+          "num_retries": 0,
+          "type": "http_api",
+          "mcp_headers": null
+        }
+      }
+    }
+  },
+  "results": [
+    {
+      "conversation_group_id": "query_tools",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 1.0,
+      "execution_time": "<T>",
+      "evaluation_latency": "<T>",
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "primary",
+          "score": 1.0,
+          "reason": "Keywords eval successful: Option 1 - all keywords matched: 'payments'",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0,
+          "verbose_logs": null
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": "<T>",
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "query_tools",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:tool_eval",
+      "result": "FAIL",
+      "score": 0.0,
+      "threshold": 1.0,
+      "execution_time": "<T>",
+      "evaluation_latency": "<T>",
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "primary",
+          "score": 0.0,
+          "reason": "Tool calls made but didn't match any of the 1 expected pattern(s)",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0,
+          "verbose_logs": null
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": "<T>",
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "query_turn_form",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 1.0,
+      "execution_time": "<T>",
+      "evaluation_latency": "<T>",
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "primary",
+          "score": 1.0,
+          "reason": "Keywords eval successful: Option 1 - all keywords matched: 'first'",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0,
+          "verbose_logs": null
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": "<T>",
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "query_turn_form",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t2",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 1.0,
+      "execution_time": "<T>",
+      "evaluation_latency": "<T>",
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "primary",
+          "score": 1.0,
+          "reason": "Keywords eval successful: Option 1 - all keywords matched: 'second'",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0,
+          "verbose_logs": null
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": "<T>",
+      "tokens_per_second": null
+    }
+  ]
+}

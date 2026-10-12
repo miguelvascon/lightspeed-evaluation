@@ -1,0 +1,20 @@
+id: wp0b.h03_streaming_lsc_L10
+parity: [L10, L11]
+summary: >-
+  Freezes today's main behavior for lsc L10 (spec v2.2 §2.1/§8.1, parity
+  8.c.3b): a streaming tool_call with a name but WITHOUT arguments --
+  key missing, null, [], "" or {} -- is KEPT as arguments {} (lsc drops
+  it); a call with no name (key missing, "" or null) is DROPPED. Both the
+  legacy {token: {tool_name, arguments}} form (group l10_args_legacy,
+  verbatim SSE) and the name/args form (group l10_args_flat, fake_lsc
+  'turn' form) are covered; order of the kept calls is preserved.
+  Frozen via the tool_calls column and the amended YAML (tool_eval on
+  these calls is DS case #28b in WP0d). Error paths: missing
+  turn_complete -> ERROR "API Error for turn t1: Response validation
+  error: No final response found in streaming output" and turn 2 cascades
+  with no second request; missing start -> "No Conversation ID found";
+  SSE error event -> "Streaming API error: ..."; HTTP 422 -> "API error:
+  422 - <raw body>" (detail not surfaced; L11 observation).
+exit_code: 0
+assert: [results, lsc_requests, amended_yaml, stdout_summary]
+agent_latency: blank   # EM ruling 10 (legs/legs_report.json)

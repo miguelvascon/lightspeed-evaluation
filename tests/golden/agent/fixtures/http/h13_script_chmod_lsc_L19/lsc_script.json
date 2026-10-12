@@ -1,0 +1,40 @@
+{
+ "routes": [
+  {
+   "path": "/v1/query",
+   "prompt": "chmod me",
+   "responses": [
+    {
+     "turn": {
+      "response": "done"
+     }
+    }
+   ],
+   "new_conversation_id": "conv-h13-0"
+  },
+  {
+   "path": "/v1/query",
+   "prompt": "verify me",
+   "responses": [
+    {
+     "turn": {
+      "response": "done"
+     }
+    }
+   ],
+   "new_conversation_id": "conv-h13-1"
+  },
+  {
+   "path": "/v1/query",
+   "prompt": "stripped later",
+   "responses": [
+    {
+     "turn": {
+      "response": "done"
+     }
+    }
+   ],
+   "new_conversation_id": "conv-h13-2"
+  }
+ ]
+}

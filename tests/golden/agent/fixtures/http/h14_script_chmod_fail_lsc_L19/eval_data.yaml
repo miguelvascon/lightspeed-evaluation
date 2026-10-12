@@ -1,0 +1,7 @@
+- conversation_group_id: locked
+  setup_script: scripts/locked_setup.sh
+  turns:
+    - turn_id: t1
+      query: never sent
+      expected_keywords: [["x"]]
+      turn_metrics: ["custom:keywords_eval"]

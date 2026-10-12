@@ -1,0 +1,40 @@
+- conversation_group_id: l10_args_legacy
+  turns:
+    - turn_id: t1
+      query: tools without args legacy
+      expected_keywords: [["ok"]]
+      turn_metrics: ["custom:keywords_eval"]
+- conversation_group_id: l10_args_flat
+  turns:
+    - turn_id: t1
+      query: tools without args flat
+      expected_keywords: [["ok"]]
+      turn_metrics: ["custom:keywords_eval"]
+- conversation_group_id: l10_no_turn_complete
+  turns:
+    - turn_id: t1
+      query: no turn complete
+      expected_keywords: [["x"]]
+      turn_metrics: ["custom:keywords_eval"]
+    - turn_id: t2
+      query: never sent
+      expected_keywords: [["x"]]
+      turn_metrics: ["custom:keywords_eval"]
+- conversation_group_id: l10_no_conversation_id
+  turns:
+    - turn_id: t1
+      query: no start event
+      expected_keywords: [["x"]]
+      turn_metrics: ["custom:keywords_eval"]
+- conversation_group_id: l10_error_event
+  turns:
+    - turn_id: t1
+      query: error event
+      expected_keywords: [["x"]]
+      turn_metrics: ["custom:keywords_eval"]
+- conversation_group_id: l11_http_error
+  turns:
+    - turn_id: t1
+      query: http 422
+      expected_keywords: [["x"]]
+      turn_metrics: ["custom:keywords_eval"]

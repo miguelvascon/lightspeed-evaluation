@@ -1,0 +1,20 @@
+id: wp0b.h13_script_chmod_lsc_L19
+parity: [L19]
+summary: >-
+  lsc L19 as main behaves today (spec v2.3 §2.1/§8 WP0b row). h13 owns
+  EVERY script exec-bit case, including all verify-script ones (#27 in
+  WP0d keeps only verify exit 0/1 and agents-off). With agents on, setup,
+  cleanup and verify scripts committed 0644 are chmodded to 0755 at load
+  (validator.py:640-647) and then run: markers prove setup/cleanup ran,
+  group verify_0644_at_load's verify script runs -> PASS "Verify script
+  passed: <OUT>/scripts/verify_0644.sh", and the on-disk modes are
+  asserted 0755 afterwards (the user's files are mutated). Group
+  runtime_strip: a 0755 setup removes the x bit from the group's (0755)
+  verify script AFTER load -> ERROR "Script execution error: Script is
+  not executable: <OUT>/scripts/verify_stripped.sh" (manager.py:77-80).
+exit_code: 0
+chmod: {scripts/setup_0644.sh: "0644", scripts/cleanup_0644.sh: "0644", scripts/verify_0644.sh: "0644"}
+file_modes: {scripts/setup_0644.sh: "0755", scripts/cleanup_0644.sh: "0755", scripts/verify_0644.sh: "0755", scripts/verify_stripped.sh: "0644"}
+assert: [results, lsc_requests, amended_yaml, markers, stdout_summary]
+markers: {scripts/setup.ran: "setup\n", scripts/cleanup.ran: "cleanup\n"}
+agent_latency: exact   # EM ruling 10 (legs/legs_report.json)

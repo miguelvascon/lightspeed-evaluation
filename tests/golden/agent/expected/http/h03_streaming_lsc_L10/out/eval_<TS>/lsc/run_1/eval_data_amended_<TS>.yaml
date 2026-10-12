@@ -1,0 +1,348 @@
+- conversation_group_id: l10_args_legacy
+  metadata: null
+  description: null
+  tag:
+  - eval
+  skip: false
+  skip_reason: null
+  conversation_metrics: null
+  conversation_metrics_metadata: null
+  turns:
+  - time_to_first_token: <T>
+    streaming_duration: <T>
+    tokens_per_second: <T>
+    turn_id: t1
+    query: tools without args legacy
+    attachments: null
+    extra_request_params: null
+    response: ok
+    tool_calls:
+    - - tool_name: args_missing
+        arguments: {}
+    - - tool_name: args_null
+        arguments: {}
+    - - tool_name: args_empty_list
+        arguments: {}
+    - - tool_name: args_empty_string
+        arguments: {}
+    - - tool_name: args_empty_dict
+        arguments: {}
+    - - tool_name: get_pods
+        arguments:
+          namespace: payments
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - ok
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: conv-l10a
+    api_input_tokens: 1
+    api_output_tokens: 1
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  setup_script: null
+  cleanup_script: null
+  skip_on_failure: null
+  agent: null
+  agent_config: null
+- conversation_group_id: l10_args_flat
+  metadata: null
+  description: null
+  tag:
+  - eval
+  skip: false
+  skip_reason: null
+  conversation_metrics: null
+  conversation_metrics_metadata: null
+  turns:
+  - time_to_first_token: <T>
+    streaming_duration: <T>
+    tokens_per_second: <T>
+    turn_id: t1
+    query: tools without args flat
+    attachments: null
+    extra_request_params: null
+    response: ok
+    tool_calls:
+    - - tool_name: flat_args_missing
+        arguments: {}
+    - - tool_name: flat_args_null
+        arguments: {}
+    - - tool_name: get_pods
+        arguments:
+          namespace: payments
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - ok
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: conv-l10b
+    api_input_tokens: 1
+    api_output_tokens: 1
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  setup_script: null
+  cleanup_script: null
+  skip_on_failure: null
+  agent: null
+  agent_config: null
+- conversation_group_id: l10_no_turn_complete
+  metadata: null
+  description: null
+  tag:
+  - eval
+  skip: false
+  skip_reason: null
+  conversation_metrics: null
+  conversation_metrics_metadata: null
+  turns:
+  - time_to_first_token: null
+    streaming_duration: null
+    tokens_per_second: null
+    turn_id: t1
+    query: no turn complete
+    attachments: null
+    extra_request_params: null
+    response: null
+    tool_calls: null
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - x
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: null
+    api_input_tokens: 0
+    api_output_tokens: 0
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  - time_to_first_token: null
+    streaming_duration: null
+    tokens_per_second: null
+    turn_id: t2
+    query: never sent
+    attachments: null
+    extra_request_params: null
+    response: null
+    tool_calls: null
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - x
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: null
+    api_input_tokens: 0
+    api_output_tokens: 0
+    agent_latency: 0.0
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  setup_script: null
+  cleanup_script: null
+  skip_on_failure: null
+  agent: null
+  agent_config: null
+- conversation_group_id: l10_no_conversation_id
+  metadata: null
+  description: null
+  tag:
+  - eval
+  skip: false
+  skip_reason: null
+  conversation_metrics: null
+  conversation_metrics_metadata: null
+  turns:
+  - time_to_first_token: null
+    streaming_duration: null
+    tokens_per_second: null
+    turn_id: t1
+    query: no start event
+    attachments: null
+    extra_request_params: null
+    response: null
+    tool_calls: null
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - x
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: null
+    api_input_tokens: 0
+    api_output_tokens: 0
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  setup_script: null
+  cleanup_script: null
+  skip_on_failure: null
+  agent: null
+  agent_config: null
+- conversation_group_id: l10_error_event
+  metadata: null
+  description: null
+  tag:
+  - eval
+  skip: false
+  skip_reason: null
+  conversation_metrics: null
+  conversation_metrics_metadata: null
+  turns:
+  - time_to_first_token: null
+    streaming_duration: null
+    tokens_per_second: null
+    turn_id: t1
+    query: error event
+    attachments: null
+    extra_request_params: null
+    response: null
+    tool_calls: null
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - x
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: null
+    api_input_tokens: 0
+    api_output_tokens: 0
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  setup_script: null
+  cleanup_script: null
+  skip_on_failure: null
+  agent: null
+  agent_config: null
+- conversation_group_id: l11_http_error
+  metadata: null
+  description: null
+  tag:
+  - eval
+  skip: false
+  skip_reason: null
+  conversation_metrics: null
+  conversation_metrics_metadata: null
+  turns:
+  - time_to_first_token: null
+    streaming_duration: null
+    tokens_per_second: null
+    turn_id: t1
+    query: http 422
+    attachments: null
+    extra_request_params: null
+    response: null
+    tool_calls: null
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - x
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: null
+    api_input_tokens: 0
+    api_output_tokens: 0
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  setup_script: null
+  cleanup_script: null
+  skip_on_failure: null
+  agent: null
+  agent_config: null

@@ -149,6 +149,8 @@ def _validate(script: dict[str, Any]) -> None:
     if not isinstance(script, dict) or not isinstance(script.get("routes"), list):
         raise ScriptError("script must be {'routes': [...]}")
     for i, route in enumerate(script["routes"]):
+        if not isinstance(route, dict):
+            raise ScriptError(f"route {i} must be a dict")
         where = f"route {i} ({route.get('path')!r})"
         if not str(route.get("path", "")).startswith("/"):
             raise ScriptError(f"{where}: 'path' must start with '/'")

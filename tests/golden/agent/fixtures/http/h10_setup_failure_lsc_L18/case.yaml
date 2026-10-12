@@ -1,0 +1,14 @@
+id: wp0b.h10_setup_failure_lsc_L18
+parity: [L18]
+summary: >-
+  lsc L18. Setup script exits 1 -> every turn AND conversation metric of
+  that group is ERROR with reason "Setup script failed: Setup script
+  returned non-zero exit code: <OUT>/scripts/setup_fail.sh"; the agent is
+  never called for that group (no lsc request); cleanup still runs exactly
+  once (marker contains one line). A second group without setup is
+  unaffected (PASS). Main differs from lsc only in running cleanup after
+  a failed setup.
+exit_code: 0
+assert: [results, lsc_requests, amended_yaml, markers, stdout_summary]
+markers: {scripts/cleanup.ran: "cleanup\n"}
+agent_latency: exact   # EM ruling 10 (legs/legs_report.json)

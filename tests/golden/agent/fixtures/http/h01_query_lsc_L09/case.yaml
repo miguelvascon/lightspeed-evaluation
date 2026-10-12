@@ -1,0 +1,13 @@
+id: wp0b.h01_query_lsc_L09
+parity: [L09, L01, L02]
+summary: >-
+  /v1/query. Tool calls in OLS name/args form, legacy tool_name/arguments
+  form, a name-only call (args -> {}), a nameless call (kept with
+  tool_name "" -- differs from streaming, which drops it) and a result
+  field. One sequence per call. Minimal request body {query,provider,model}.
+  Group 2 drives fake_lsc's 'turn' form on /query: argument-less calls
+  (no key / null -> {}), a nameless call (kept, tool_name ""), and the
+  @CONV@ echo (turn 2 request carries conversation_id conv-query-002).
+exit_code: 0
+assert: [results, lsc_requests, amended_yaml, file_tree, flat_copy, stdout_summary]
+agent_latency: blank   # EM ruling 10 (legs/legs_report.json)

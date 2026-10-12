@@ -1,8 +1,4 @@
-"""HTTP-agent goldens for lsc-parity L09, L10, L18 and L19.
-
-Expected artifacts live in ``expected/http/<case>/``. ``LS_GOLDEN_UPDATE=1``
-rewrites them (spec section 5.3). Comparison uses ``rate_fixture``.
-"""
+"""HTTP-agent goldens for lsc-parity L09, L10, L18 and L19."""
 
 from __future__ import annotations
 
@@ -38,18 +34,12 @@ _TIMING = frozenset(
         "agent_latency_mean_delta",
     }
 )
-_SUFFIXES = (".csv", ".json", ".yaml", ".yml")
 _PORT = re.compile(r"127\.0\.0\.1:\d+")
 _TO_STREAM = {"streaming_performance": "streaming"}
 _FROM_STREAM = {"streaming": "streaming_performance"}
 
 
-def _scrub(text: str) -> str:
-    return _PORT.sub("127.0.0.1:<PORT>", text)
-
-
 def _swap(obj: Any, table: dict[str, str]) -> Any:
-    """Rename keys so ``normalize_obj`` blanks the streaming timing tree."""
     if isinstance(obj, list):
         return [_swap(item, table) for item in obj]
     if not isinstance(obj, dict):
@@ -64,10 +54,8 @@ def _stable(obj: Any, roots: tuple[str, ...], keep: tuple[str, ...]) -> Any:
 
 
 def _text(text: str, roots: tuple[str, ...], *, polls: bool) -> str:
-    normalized = normalize_text(_scrub(text), roots=roots)
-    if not polls:
-        return normalized
-    collapsed = collapse_polls(normalized)
+    normalized = normalize_text(_PORT.sub("127.0.0.1:<PORT>", text), roots=roots)
+    collapsed = collapse_polls(normalized) if polls else normalized
     return collapsed if isinstance(collapsed, str) else normalized
 
 
@@ -86,11 +74,10 @@ def _csv(text: str, roots: tuple[str, ...], keep: tuple[str, ...]) -> str:
                     pass
             built[key] = value
         rows.append(built)
-    normalized = _stable(rows, roots, keep)
     buffer = io.StringIO()
     writer = csv.DictWriter(buffer, fieldnames=fields, lineterminator="\n")
     writer.writeheader()
-    for row in normalized:
+    for row in _stable(rows, roots, keep):
         writer.writerow(
             {key: "" if row.get(key) is None else row[key] for key in fields}
         )
@@ -98,7 +85,7 @@ def _csv(text: str, roots: tuple[str, ...], keep: tuple[str, ...]) -> str:
 
 
 def _render(path: Path, roots: tuple[str, ...], keep: tuple[str, ...]) -> str:
-    text = _scrub(path.read_text(encoding="utf-8"))
+    text = _PORT.sub("127.0.0.1:<PORT>", path.read_text(encoding="utf-8"))
     suffix = path.suffix.lower()
     if suffix == ".json":
         rendered = _stable(json.loads(text), roots, keep)
@@ -126,7 +113,6 @@ def _tree(out: Path, roots: tuple[str, ...], keep: tuple[str, ...]) -> dict[str,
 
 
 def _reports(actual: dict[str, str], run: CaseRun, tree: dict[str, str]) -> None:
-    """Add stdout, request logs, markers, and file modes."""
     wanted = set(run.case.get("assert", []))
     roots = (str(run.workdir), str(run.workdir.resolve()))
     polls = bool(run.case.get("oc_calls_collapse_polls"))
@@ -181,26 +167,21 @@ def collect_actual(run: CaseRun) -> dict[str, str]:
         actual["file_tree.txt"] = "".join(f"{name}\n" for name in sorted(tree))
     if "results" in wanted:
         for rel, text in tree.items():
-            if rel.endswith(_SUFFIXES):
+            if rel.endswith((".csv", ".json", ".yaml", ".yml")):
                 actual[f"out/{rel}"] = text
     _reports(actual, run, tree)
     return actual
 
 
-def _write_expected(actual: dict[str, str], expected_dir: Path) -> None:
-    if expected_dir.exists():
-        shutil.rmtree(expected_dir)
-    for name, text in actual.items():
-        dest = expected_dir / name
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(text, encoding="utf-8")
-
-
 def _assert_golden(actual: dict[str, str], expected_dir: Path) -> None:
-    """Compare with ``rate_fixture``, or rewrite when ``LS_GOLDEN_UPDATE=1``."""
     ordered = {key: actual[key] for key in sorted(actual)}
     if os.environ.get("LS_GOLDEN_UPDATE") == "1":
-        _write_expected(ordered, expected_dir)
+        if expected_dir.exists():
+            shutil.rmtree(expected_dir)
+        for name, text in ordered.items():
+            dest = expected_dir / name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(text, encoding="utf-8")
         return
     expected = {
         path.relative_to(expected_dir).as_posix(): path.read_text(encoding="utf-8")

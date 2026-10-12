@@ -1,9 +1,4 @@
-"""Fixtures for the HTTP-agent goldens (WP0b).
-
-``golden_env_extra`` and ``golden_pythonpath_extra`` are the WP0a per-directory
-hooks. case.yaml ``env`` is the subprocess caller map (applied after them).
-``pytest_marks`` supplies registered marks such as ``slow``.
-"""
+"""Fixtures for the HTTP-agent goldens (WP0b)."""
 
 from __future__ import annotations
 
@@ -64,28 +59,22 @@ def load_case(fixture_dir: Path) -> dict[str, Any]:
     return loaded
 
 
-def discover(kind: str) -> list[Path]:
-    """Return fixture directories under ``fixtures/<kind>`` that have case.yaml."""
+def case_params(kind: str) -> list[Any]:
+    """One pytest param per fixture, including marks from ``pytest_marks``."""
     root = HERE / "fixtures" / kind
     if not root.is_dir():
         return []
-    return sorted(path for path in root.iterdir() if (path / "case.yaml").is_file())
-
-
-def case_params(kind: str) -> list[Any]:
-    """One pytest param per fixture, including marks from ``pytest_marks``."""
     params = []
-    for folder in discover(kind):
-        marks = [
-            getattr(pytest.mark, name)
-            for name in load_case(folder).get("pytest_marks", [])
-        ]
+    found = sorted(p for p in root.iterdir() if (p / "case.yaml").is_file())
+    for folder in found:
+        names = load_case(folder).get("pytest_marks", [])
+        marks = [getattr(pytest.mark, name) for name in names]
         params.append(pytest.param(folder, id=folder.name, marks=marks))
     return params
 
 
 def _publish_openai_base_url(url: str) -> None:
-    for module in list(sys.modules.values()):
+    for module in sys.modules.values():
         if getattr(module, "__file__", None) != str(_ROOT_CONFTEST):
             continue
         hook = cast(
@@ -112,7 +101,13 @@ def _copy_fixture(src: Path, dst: Path, subs: dict[str, str]) -> dict[str, Any]:
     return case
 
 
-def _noexec_target() -> Path | None:
+def _link_noexec(work: Path, case: dict[str, Any]) -> Path | None:
+    links = case.get("noexec_link") or {}
+    if not links:
+        return None
+    if os.geteuid() == 0:
+        pytest.skip(ROOT_SKIP_REASON)
+    target = None
     for cand in _NOEXEC:
         path = Path(cand)
         if not path.is_file() or os.access(path, os.X_OK):
@@ -120,17 +115,8 @@ def _noexec_target() -> Path | None:
         try:
             os.chmod(path, path.stat().st_mode & 0o7777)
         except PermissionError:
-            return path.resolve()
-    return None
-
-
-def _link_noexec(work: Path, case: dict[str, Any]) -> Path | None:
-    links = case.get("noexec_link") or {}
-    if not links:
-        return None
-    if os.geteuid() == 0:
-        pytest.skip(ROOT_SKIP_REASON)
-    target = _noexec_target()
+            target = path.resolve()
+            break
     if target is None:
         pytest.skip(
             "h14 (lsc L19 chmod failure) skipped: no file this user cannot chmod"
@@ -160,24 +146,6 @@ def _mount(
     return Router(*mounted), fake, judge
 
 
-def _cli(work: Path, caller: dict[str, str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [
-            str(Path(sys.executable).with_name("lightspeed-eval")),
-            "--system-config",
-            str(work / "system.yaml"),
-            "--eval-data",
-            str(work / "eval_data.yaml"),
-        ],
-        cwd=work,
-        env=caller or None,
-        capture_output=True,
-        text=True,
-        timeout=180,
-        check=False,
-    )
-
-
 @pytest.fixture
 def run_agent_case(tmp_path: Path) -> Callable[[Path], CaseRun]:
     """Return ``run(fixture_dir)`` that executes one case against loopback."""
@@ -189,17 +157,24 @@ def run_agent_case(tmp_path: Path) -> Callable[[Path], CaseRun]:
                 _publish_openai_base_url(f"{base}/v1")
             work = tmp_path / "case"
             case = _copy_fixture(
-                fixture_dir,
-                work,
-                {"@LSC_BASE@": f"{base}/lsc", "@OUT@": str(work)},
+                fixture_dir, work, {"@LSC_BASE@": f"{base}/lsc", "@OUT@": str(work)}
             )
             noexec = _link_noexec(work, case)
-            proc = _cli(
-                work,
-                {
-                    str(key): str(value)
-                    for key, value in (case.get("env") or {}).items()
-                },
+            caller = {str(k): str(v) for k, v in (case.get("env") or {}).items()}
+            proc = subprocess.run(
+                [
+                    str(Path(sys.executable).with_name("lightspeed-eval")),
+                    "--system-config",
+                    str(work / "system.yaml"),
+                    "--eval-data",
+                    str(work / "eval_data.yaml"),
+                ],
+                cwd=work,
+                env=caller or None,
+                capture_output=True,
+                text=True,
+                timeout=180,
+                check=False,
             )
         return CaseRun(case, work, proc, fake, judge, noexec)
 

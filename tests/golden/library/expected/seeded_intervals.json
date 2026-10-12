@@ -1,0 +1,8 @@
+{
+  "custom:keywords_eval": {
+    "low": 0.0,
+    "mean": 0.5,
+    "high": 1.0,
+    "confidence_level": 95.0
+  }
+}

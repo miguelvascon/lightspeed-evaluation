@@ -154,9 +154,16 @@ class JudgeReplay:
 
     def assert_clean(self) -> None:
         """Fail on any miss (with the nearest-match diff) or any unused entry."""
+        # Clients retry a 599 two or three times; report each missed key once.
+        first: dict[str, dict] = {}
+        count: dict[str, int] = {}
+        for m in self.misses:
+            first.setdefault(m["key"], m)
+            count[m["key"]] = count.get(m["key"], 0) + 1
         problems = [
-            f"MISS {m['path']} {m['key'][:12]}#{m['ordinal']}:\n{self.nearest_diff(m)}"
-            for m in self.misses
+            f"MISS {m['path']} {k[:12]}#{m['ordinal']} (x{count[k]}):\n"
+            + self.nearest_diff(m)
+            for k, m in first.items()
         ]
         problems += [f"UNUSED cassette entry {k[:12]}#{i}" for k, i in self.unused()]
         if problems:
@@ -166,8 +173,17 @@ class JudgeReplay:
 # ---------------------------------------------------------------- transport
 @contextlib.contextmanager
 def serve(cassette: Path | list[dict]) -> Iterator[tuple[str, JudgeReplay]]:
-    """Run the judge on WP0a's loopback server; yields (OPENAI_BASE_URL, replay state)."""
+    """Run the judge on WP0a's loopback server; yields (OPENAI_BASE_URL, replay state).
+
+    Mounted at ``/v1`` and at ``/t`` (the recorder's ``/t/<tag>/v1`` routes; the
+    tag is stripped before keying). Responses are served as ``json.dumps`` of the
+    stored body, not the original wire bytes: the cassette format stores the
+    parsed body, clients only parse it, and the dry-run == shipped-cassette check
+    compares written cassette lines, which never depend on served bytes.
+    """
     entries = cassette if isinstance(cassette, list) else load_cassette(cassette)
     replay = JudgeReplay(entries)
-    with _serve(Router(prefix("/v1", replay.handle))) as base:
+    with _serve(
+        Router(prefix("/v1", replay.handle), prefix("/t", replay.handle))
+    ) as base:
         yield base + "/v1", replay

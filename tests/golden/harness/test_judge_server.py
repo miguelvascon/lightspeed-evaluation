@@ -101,3 +101,21 @@ def test_tagged_recorder_routes_share_the_key() -> None:
     assert replay.handle("POST", "/t/rec" + PATH, {}, BODY.encode())[0] == 200
     assert replay.handle("POST", PATH, {}, BODY.encode())[0] == 200
     replay.assert_clean()
+
+
+def test_tagged_mount_over_http_and_miss_dedupe() -> None:
+    """/t/<tag>/v1 is mounted; a retried miss is reported once with its count."""
+    with js.serve([_entry(BODY, 0, "a")]) as (base_url, replay):
+        root = base_url[: -len("/v1")]
+        req = urllib.request.Request(root + "/t/rec" + PATH, data=BODY.encode())
+        with _NO_PROXY.open(req) as resp:
+            assert resp.status == 200
+        for _ in range(3):  # a client retrying the same unknown request
+            with pytest.raises(urllib.error.HTTPError) as exc:
+                _NO_PROXY.open(
+                    urllib.request.Request(base_url + "/chat/completions", data=b"{}")
+                )
+            assert exc.value.code == 599
+    with pytest.raises(AssertionError) as err:
+        replay.assert_clean()
+    assert str(err.value).count("MISS ") == 1 and "(x3)" in str(err.value)

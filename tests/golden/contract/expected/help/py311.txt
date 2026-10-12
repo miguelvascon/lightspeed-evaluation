@@ -1,0 +1,29 @@
+usage: lightspeed-eval [-h] [--system-config SYSTEM_CONFIG]
+                       [--eval-data EVAL_DATA] [--output-dir OUTPUT_DIR]
+                       [--tags TAGS [TAGS ...]]
+                       [--conv-ids CONV_IDS [CONV_IDS ...]]
+                       [--metrics METRICS [METRICS ...]] [--cache-warmup]
+
+Lightspeed Evaluation Framework / Tool
+
+options:
+  -h, --help            show this help message and exit
+  --system-config SYSTEM_CONFIG
+                        Path to system configuration file (default:
+                        config/system.yaml)
+  --eval-data EVAL_DATA
+                        Path to evaluation data file (default:
+                        config/evaluation_data.yaml)
+  --output-dir OUTPUT_DIR
+                        Override output directory (optional)
+  --tags TAGS [TAGS ...]
+                        Filter by tags (run conversation groups with matching
+                        tags)
+  --conv-ids CONV_IDS [CONV_IDS ...]
+                        Filter by conversation group IDs (run only specified
+                        conversations)
+  --metrics METRICS [METRICS ...]
+                        Filter to only run specified metrics (e.g.
+                        custom:answer_correctness)
+  --cache-warmup        Enable cache warmup mode - rebuild caches without
+                        reading existing entries

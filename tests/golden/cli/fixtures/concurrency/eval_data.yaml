@@ -1,0 +1,20 @@
+- conversation_group_id: alpha
+  description: Keywords that are present
+  tag: keywords
+  turns:
+  - turn_id: t1
+    query: What is a namespace?
+    response: A namespace provides isolation.
+    expected_keywords:
+    - - namespace
+      - isolation
+- conversation_group_id: beta
+  description: A required keyword is missing
+  tag: other
+  turns:
+  - turn_id: t1
+    query: What is a namespace?
+    response: A namespace provides isolation.
+    expected_keywords:
+    - - namespace
+      - openshift

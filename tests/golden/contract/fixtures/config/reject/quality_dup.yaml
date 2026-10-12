@@ -1,0 +1,13 @@
+core:
+  cache_enabled: false
+metrics_metadata:
+  turn_level:
+    custom:keywords_eval:
+      description: keywords
+      default: true
+quality_score:
+  metrics:
+  - custom:keywords_eval
+  - custom:keywords_eval
+agents:
+  enabled: false

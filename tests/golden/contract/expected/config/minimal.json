@@ -1,0 +1,84 @@
+{
+  "warnings": [
+    "lightspeed_evaluation.core.models.system: DEPRECATION: 'llm' configuration is deprecated. Please migrate to 'llm_pool' format."
+  ],
+  "dump": {
+    "core": {
+      "max_threads": 1,
+      "fail_on_invalid_data": true,
+      "skip_on_failure": false,
+      "cache_enabled": false,
+      "cache_base_dir": ".caches"
+    },
+    "llm": {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "ssl_verify": true,
+      "ssl_cert_file": null,
+      "temperature": 0.0,
+      "max_tokens": 512,
+      "timeout": 300,
+      "num_retries": 3,
+      "cache_dir": ".caches/llm",
+      "cache_enabled": false,
+      "parameters": {
+        "temperature": 0.0,
+        "max_completion_tokens": 512
+      }
+    },
+    "llm_pool": null,
+    "judge_panel": null,
+    "embedding": {
+      "provider": "openai",
+      "model": "text-embedding-3-small",
+      "provider_kwargs": null,
+      "cache_dir": null,
+      "cache_enabled": false
+    },
+    "api": {
+      "api_base": "http://localhost:8080",
+      "version": "v1",
+      "endpoint_type": "streaming",
+      "timeout": 300,
+      "provider": null,
+      "model": null,
+      "no_tools": null,
+      "system_prompt": null,
+      "extra_request_params": null,
+      "cache_dir": ".caches/agent",
+      "cache_enabled": false,
+      "num_retries": 3,
+      "enabled": true,
+      "mcp_headers": null
+    },
+    "agents": {
+      "enabled": false,
+      "default": {
+        "agent": null,
+        "agent_config": null,
+        "repeat": 1,
+        "parallel": false
+      },
+      "agents": {}
+    },
+    "storage": [],
+    "logging": {
+      "source_level": "WARNING",
+      "package_level": "WARNING",
+      "log_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+      "show_timestamps": true,
+      "package_overrides": {}
+    },
+    "visualization": {
+      "figsize": [
+        12,
+        8
+      ],
+      "dpi": 300,
+      "enabled_graphs": []
+    },
+    "quality_score": null,
+    "default_turn_metrics_metadata": {},
+    "default_conversation_metrics_metadata": {}
+  }
+}

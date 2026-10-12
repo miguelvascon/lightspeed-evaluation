@@ -1,0 +1,7 @@
+core:
+  cache_enabled: false
+agents:
+  enabled: false
+  http_api:
+    type: http_api
+    endpoint_type: nope

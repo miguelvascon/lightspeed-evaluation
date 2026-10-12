@@ -1,0 +1,8 @@
+core:
+  cache_enabled: false
+agents:
+  enabled: true
+  default:
+    agent: [cluster]
+  cluster:
+    type: openshift_agentic_run

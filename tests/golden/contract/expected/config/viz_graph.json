@@ -1,0 +1,4 @@
+{
+  "type": "ValidationError",
+  "message": "1 validation error for VisualizationConfig\nenabled_graphs\n  Value error, Unsupported graph type: not_a_graph. Supported types: ['pass_rates', 'score_distribution', 'conversation_heatmap', 'status_breakdown'] [type=value_error, input_value=['not_a_graph'], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error"
+}

@@ -1,0 +1,4 @@
+{
+  "type": "ValidationError",
+  "message": "1 validation error for LoggingConfig\nnot_a_field\n  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden"
+}

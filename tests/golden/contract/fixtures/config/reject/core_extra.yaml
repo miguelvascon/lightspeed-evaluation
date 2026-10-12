@@ -1,0 +1,5 @@
+core:
+  cache_enabled: false
+  not_a_field: 1
+agents:
+  enabled: false

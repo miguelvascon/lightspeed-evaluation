@@ -1,0 +1,4 @@
+{
+  "type": "ValidationError",
+  "message": "1 validation error for QualityScoreConfig\nmetrics\n  Value error, Quality score metrics list cannot be empty. Either specify at least one metric or remove the quality_score section from configuration. [type=value_error, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error"
+}

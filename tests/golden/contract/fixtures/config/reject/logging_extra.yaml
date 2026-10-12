@@ -1,0 +1,6 @@
+core:
+  cache_enabled: false
+logging:
+  not_a_field: 1
+agents:
+  enabled: false

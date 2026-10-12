@@ -1,0 +1,4 @@
+{
+  "type": "ConfigurationError",
+  "message": "Unknown storage backend type 'tape'. Supported types: file, sqlite, postgres, mysql, langfuse, mlflow"
+}

@@ -1,0 +1,6 @@
+core:
+  cache_enabled: false
+storage:
+- type: tape
+agents:
+  enabled: false

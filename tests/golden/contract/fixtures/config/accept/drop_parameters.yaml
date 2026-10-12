@@ -1,0 +1,15 @@
+core:
+  cache_enabled: false
+  cache_base_dir: .caches
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.0
+  parameters:
+    foo: 1
+    temperature: 9
+logging:
+  source_level: WARNING
+  package_level: WARNING
+agents:
+  enabled: false

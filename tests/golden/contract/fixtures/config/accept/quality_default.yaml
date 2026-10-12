@@ -1,0 +1,21 @@
+core:
+  cache_enabled: false
+  cache_base_dir: .caches
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.0
+logging:
+  source_level: WARNING
+  package_level: WARNING
+metrics_metadata:
+  turn_level:
+    custom:keywords_eval:
+      description: keywords
+      default: false
+quality_score:
+  default: true
+  metrics:
+  - custom:keywords_eval
+agents:
+  enabled: false

@@ -1,0 +1,6 @@
+core:
+  cache_enabled: false
+quality_score:
+  metrics: []
+agents:
+  enabled: false

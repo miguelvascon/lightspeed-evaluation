@@ -19,6 +19,12 @@ Per-test and per-directory additions (storage fakes, ``API_KEY``, PATH):
 
   Marker kwargs win over the fixture override. Paths are prepended, in order,
   before the golden ``sitecustomize`` directory.
+* ``OPENAI_API_KEY`` is always ``golden-fake`` or absent. Pass ``UNSET``
+  (``tests.golden._env.UNSET``) to drop it, as in l22_no_key. Any other value
+  is ignored, and a host key is never copied in.
+* ``publish_openai_base_url`` lives in ``tests.golden._env``. Importing it
+  from this conftest still updates the hook when pytest has loaded this file
+  as ``golden.conftest``.
 
 ``pytest_configure`` registers the ``golden`` marker for this directory and
 for ``tests/golden/harness/``. Harness tests do not need their own conftest
@@ -36,6 +42,18 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+
+from tests.golden._compare import (
+    match_case_id,
+    parse_pending_regen,
+    pending_skip_reason,
+    pending_summary,
+    reject_unknown_cases,
+)
+from tests.golden._env import RUNTIME as _STATE
+from tests.golden._env import UNSET, publish_openai_base_url
+
+__all__ = ["UNSET", "publish_openai_base_url"]
 
 _FIXED = {
     "PYTHONHASHSEED": "0",
@@ -60,8 +78,9 @@ _UNSET = frozenset(
         "OPENAI_API_BASE",
     }
 )
-_STATE: dict[str, str] = {}
 _ORDER_ONLY: list[str] = []
+_PENDING: dict[str, str] = {}
+_PENDING_KEY = pytest.StashKey[dict[str, str]]()
 _REPO = Path(__file__).resolve().parents[2]
 _SPAWN = [subprocess.Popen]
 
@@ -69,12 +88,6 @@ _SPAWN = [subprocess.Popen]
 def note_order_only(digest: str) -> None:
     """Record an ORDER-ONLY digest for the golden job summary."""
     _ORDER_ONLY.append(digest)
-
-
-def publish_openai_base_url(url: str) -> None:
-    """Point later golden subprocesses at a local fake judge."""
-    _STATE["base_url"] = url
-    os.environ["OPENAI_BASE_URL"] = url
 
 
 def _secret(key: str) -> bool:
@@ -105,18 +118,44 @@ def _child_env(caller: Mapping[str, str] | None) -> dict[str, str]:
 
     Inherited provider secrets are dropped. Keys from ``golden_env_extra`` and
     an explicit ``subprocess`` ``env`` mapping are applied afterwards, so a
-    case can set a fake ``API_KEY``. ``OPENAI_API_KEY`` stays the placeholder.
+    case can set a fake ``API_KEY``. ``OPENAI_API_KEY`` is the placeholder
+    unless a source sets it to ``UNSET``, in which case the key is absent.
     """
     extras = json.loads(_STATE.get("extra_env") or "{}")
     env = {key: value for key, value in os.environ.items() if not _secret(key)}
-    env.update({str(key): str(value) for key, value in extras.items()})
+    env.update(_plain(extras))
     if caller is not None:
-        env.update({str(key): str(value) for key, value in caller.items()})
+        env.update(_plain(caller))
     env.update(_FIXED)
     env["MPLCONFIGDIR"] = _STATE["mpl"]
     env["OPENAI_BASE_URL"] = _STATE["base_url"]
     _pythonpath(env)
+    _lock_openai_key(env, extras, caller)
     return env
+
+
+def _plain(mapping: Mapping[str, str]) -> dict[str, str]:
+    return {
+        str(key): str(value)
+        for key, value in mapping.items()
+        if not (key == "OPENAI_API_KEY" and value == UNSET)
+    }
+
+
+def _wants_unset(mapping: Mapping[str, str] | None) -> bool:
+    return mapping is not None and mapping.get("OPENAI_API_KEY") == UNSET
+
+
+def _lock_openai_key(
+    env: dict[str, str],
+    extras: Mapping[str, str],
+    caller: Mapping[str, str] | None,
+) -> None:
+    """Force the dummy key, or delete it. Never keep a host or caller value."""
+    if _wants_unset(extras) or _wants_unset(caller):
+        env.pop("OPENAI_API_KEY", None)
+        return
+    env["OPENAI_API_KEY"] = "golden-fake"
 
 
 def _popen(args: Any, *pargs: Any, **kwargs: Any) -> Any:
@@ -211,9 +250,97 @@ def pytest_configure(config: pytest.Config) -> None:
             "golden: Characterization tests that require the golden "
             "determinism env (run by golden.yaml)",
         )
+    if "golden_case" not in known:
+        config.addinivalue_line(
+            "markers",
+            "golden_case(case_id): Golden case id skipped while listed in "
+            "tests/golden/PENDING_REGEN",
+        )
+
+
+def case_id_from_item(item: Any) -> str | None:
+    """Return the case id WP0c must expose, or ``None`` for a harness test.
+
+    ``golden_case`` wins. Otherwise use a ``case_id`` parameter, or the
+    directory name of a parameter path under ``fixtures/``. A
+    ``fixtures/<id>/`` dir with ``system.yaml`` or ``eval_data.yaml`` is known
+    even with no parameter. Harness tests use none of these and are not cases.
+    """
+    marker = item.get_closest_marker("golden_case")
+    if marker is not None and marker.args:
+        return match_case_id(marker.args[0])
+    params = getattr(getattr(item, "callspec", None), "params", None)
+    if not isinstance(params, Mapping):
+        return None
+    named = match_case_id(params.get("case_id"))
+    if named is not None:
+        return named
+    for value in params.values():
+        found = _fixture_dirname(value)
+        if found is not None:
+            return found
+    return None
+
+
+def _fixture_dirname(value: object) -> str | None:
+    if isinstance(value, Path):
+        raw = value
+    elif isinstance(value, str):
+        raw = Path(value)
+    else:
+        return None
+    if "fixtures" not in raw.parts:
+        return None
+    return match_case_id(raw.name)
+
+
+def known_case_ids(items: list[Any], root: Path) -> set[str]:
+    """Return collected case ids plus fixture dirs that hold a case file."""
+    found: set[str] = set()
+    for item in items:
+        case_id = case_id_from_item(item)
+        if case_id is not None:
+            found.add(case_id)
+    for filename in ("system.yaml", "eval_data.yaml"):
+        for path in root.rglob(filename):
+            if "fixtures" not in path.parts:
+                continue
+            case_id = match_case_id(path.parent.name)
+            if case_id is not None:
+                found.add(case_id)
+    return found
+
+
+def skip_pending_items(items: list[Any], pending: Mapping[str, str]) -> None:
+    """Skip a listed case. The id is derived from the test, not a marker."""
+    for item in items:
+        case_id = case_id_from_item(item)
+        if case_id is None:
+            continue
+        reason = pending_skip_reason(case_id, pending)
+        if reason is not None:
+            item.add_marker(pytest.mark.skip(reason=reason))
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    """Load ``PENDING_REGEN``, reject unknown ids, and skip listed cases."""
+    root = Path(__file__).resolve().parent
+    path = root / "PENDING_REGEN"
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    pending = parse_pending_regen(text)
+    golden = [item for item in items if item.get_closest_marker("golden") is not None]
+    reject_unknown_cases(pending, known_case_ids(golden, root))
+    _PENDING.clear()
+    _PENDING.update(pending)
+    config.stash[_PENDING_KEY] = dict(pending)
+    skip_pending_items(golden, pending)
 
 
 def pytest_terminal_summary(terminalreporter: Any) -> None:
-    """Print the ORDER-ONLY digest the DS copies into the sign-off comment."""
+    """Print ORDER-ONLY and PENDING lines for the golden job summary."""
     digest = ",".join(_ORDER_ONLY) if _ORDER_ONLY else "none"
     terminalreporter.write_line(f"ORDER-ONLY digest: {digest}")
+    pending = terminalreporter.config.stash.get(_PENDING_KEY, _PENDING)
+    terminalreporter.write_line(pending_summary(pending))

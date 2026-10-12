@@ -306,7 +306,10 @@ def assert_pending_empty(text: str) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Exit 1 when ``--require-empty`` sees PENDING cases.
+    """Exit 1 when ``--require-empty`` sees PENDING cases or a missing file.
+
+    An empty file is the only passing state. Deleting ``PENDING_REGEN``
+    fails the check, the same as a file that still lists cases.
 
     G0 runs ``python3 -m tests.golden._compare --require-empty`` before
     tagging. ``golden.yaml`` runs that command on ``workflow_dispatch``,
@@ -321,9 +324,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 2
     path = Path(_PENDING_PATH)
-    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    if not path.is_file():
+        print(
+            "PENDING_REGEN is missing; a release must keep the file",
+            file=sys.stderr,
+        )
+        return 1
     try:
-        assert_pending_empty(text)
+        assert_pending_empty(path.read_text(encoding="utf-8"))
     except PendingRegenError as exc:
         print(exc, file=sys.stderr)
         return 1

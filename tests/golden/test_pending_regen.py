@@ -163,6 +163,19 @@ def test_require_empty_blocks_a_release() -> None:
     assert main([]) == 2
 
 
+def test_require_empty_rejects_a_missing_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Deleting ``PENDING_REGEN`` fails G0. An empty file in that path passes."""
+    monkeypatch.chdir(tmp_path)
+    assert main(["--require-empty"]) == 1
+    assert "PENDING_REGEN is missing" in capsys.readouterr().err
+    pending = tmp_path / "tests" / "golden"
+    pending.mkdir(parents=True)
+    (pending / "PENDING_REGEN").write_text("", encoding="utf-8")
+    assert main(["--require-empty"]) == 0
+
+
 def test_empty_file_is_a_noop() -> None:
     """The checked-in file lists nothing, so no case is skipped."""
     text = Path("tests/golden/PENDING_REGEN").read_text(encoding="utf-8")

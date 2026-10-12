@@ -60,6 +60,8 @@ jobs:
           PY
 
   # G0 / release. Skipped on pull_request, so it is not a PR status check.
+  # Only an empty tests/golden/PENDING_REGEN passes. A missing file fails,
+  # the same as a file that still lists cases.
   # Locally, from the repo root:
   #   python3 -m tests.golden._compare --require-empty
   release-pending-empty:

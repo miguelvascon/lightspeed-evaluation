@@ -4,8 +4,33 @@ name: E2E Lightspeed Evaluation Integration Tests
 on: [push, pull_request_target]
 
 jobs:
+  # jobs.<job_id>.if can read github, needs, vars, and inputs only — not
+  # secrets or env. Resolve whether OPENAI_API_KEY is non-empty here and
+  # pass a boolean output. Never print the secret value.
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      has_key: ${{ steps.check_key.outputs.has_key }}
+    steps:
+      - name: Detect whether OPENAI_API_KEY is configured
+        id: check_key
+        env:
+          KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+            echo "OPENAI_API_KEY is set; E2E integration tests will run."
+          else
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+            echo "OPENAI_API_KEY is absent or empty; E2E integration tests will be skipped."
+          fi
+
   ##########
   e2e_tests:
+    needs: preflight
+    # Skipped, not failed, when the secret is absent, empty, or not injected
+    # (including fork PRs in contexts where GitHub withholds secrets).
+    if: ${{ needs.preflight.outputs.has_key == 'true' }}
     runs-on: ubuntu-latest
 
     strategy:

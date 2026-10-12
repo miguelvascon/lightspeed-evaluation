@@ -19,6 +19,12 @@ Per-test and per-directory additions (storage fakes, ``API_KEY``, PATH):
 
   Marker kwargs win over the fixture override. Paths are prepended, in order,
   before the golden ``sitecustomize`` directory.
+* ``OPENAI_API_KEY`` is always ``golden-fake`` or absent. Pass ``UNSET``
+  (``tests.golden._env.UNSET``) to drop it, as in l22_no_key. Any other value
+  is ignored, and a host key is never copied in.
+* ``publish_openai_base_url`` lives in ``tests.golden._env``. Importing it
+  from this conftest still updates the hook when pytest has loaded this file
+  as ``golden.conftest``.
 
 ``pytest_configure`` registers the ``golden`` marker for this directory and
 for ``tests/golden/harness/``. Harness tests do not need their own conftest
@@ -36,6 +42,11 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+
+from tests.golden._env import RUNTIME as _STATE
+from tests.golden._env import UNSET, publish_openai_base_url
+
+__all__ = ["UNSET", "publish_openai_base_url"]
 
 _FIXED = {
     "PYTHONHASHSEED": "0",
@@ -60,7 +71,6 @@ _UNSET = frozenset(
         "OPENAI_API_BASE",
     }
 )
-_STATE: dict[str, str] = {}
 _ORDER_ONLY: list[str] = []
 _REPO = Path(__file__).resolve().parents[2]
 _SPAWN = [subprocess.Popen]
@@ -69,12 +79,6 @@ _SPAWN = [subprocess.Popen]
 def note_order_only(digest: str) -> None:
     """Record an ORDER-ONLY digest for the golden job summary."""
     _ORDER_ONLY.append(digest)
-
-
-def publish_openai_base_url(url: str) -> None:
-    """Point later golden subprocesses at a local fake judge."""
-    _STATE["base_url"] = url
-    os.environ["OPENAI_BASE_URL"] = url
 
 
 def _secret(key: str) -> bool:
@@ -105,18 +109,44 @@ def _child_env(caller: Mapping[str, str] | None) -> dict[str, str]:
 
     Inherited provider secrets are dropped. Keys from ``golden_env_extra`` and
     an explicit ``subprocess`` ``env`` mapping are applied afterwards, so a
-    case can set a fake ``API_KEY``. ``OPENAI_API_KEY`` stays the placeholder.
+    case can set a fake ``API_KEY``. ``OPENAI_API_KEY`` is the placeholder
+    unless a source sets it to ``UNSET``, in which case the key is absent.
     """
     extras = json.loads(_STATE.get("extra_env") or "{}")
     env = {key: value for key, value in os.environ.items() if not _secret(key)}
-    env.update({str(key): str(value) for key, value in extras.items()})
+    env.update(_plain(extras))
     if caller is not None:
-        env.update({str(key): str(value) for key, value in caller.items()})
+        env.update(_plain(caller))
     env.update(_FIXED)
     env["MPLCONFIGDIR"] = _STATE["mpl"]
     env["OPENAI_BASE_URL"] = _STATE["base_url"]
     _pythonpath(env)
+    _lock_openai_key(env, extras, caller)
     return env
+
+
+def _plain(mapping: Mapping[str, str]) -> dict[str, str]:
+    return {
+        str(key): str(value)
+        for key, value in mapping.items()
+        if not (key == "OPENAI_API_KEY" and value == UNSET)
+    }
+
+
+def _wants_unset(mapping: Mapping[str, str] | None) -> bool:
+    return mapping is not None and mapping.get("OPENAI_API_KEY") == UNSET
+
+
+def _lock_openai_key(
+    env: dict[str, str],
+    extras: Mapping[str, str],
+    caller: Mapping[str, str] | None,
+) -> None:
+    """Force the dummy key, or delete it. Never keep a host or caller value."""
+    if _wants_unset(extras) or _wants_unset(caller):
+        env.pop("OPENAI_API_KEY", None)
+        return
+    env["OPENAI_API_KEY"] = "golden-fake"
 
 
 def _popen(args: Any, *pargs: Any, **kwargs: Any) -> Any:

@@ -12,6 +12,8 @@ import pytest
 from tests.golden._compare import (
     PendingRegenError,
     apply_pending,
+    assert_pending_empty,
+    main,
     parse_pending_regen,
     pending_protocol_error,
     pending_review_warning,
@@ -151,6 +153,14 @@ def test_rename_out_of_src_blocks_both_guards(tmp_path: Path) -> None:
     assert regen_guard_blocks(two_dot, []) is True
     assert pending_protocol_error(_LISTED, "", folded) is None
     assert pending_protocol_error(_LISTED, "", opened) is not None
+
+
+def test_require_empty_blocks_a_release() -> None:
+    """G0 rejects a listed case. The checked-in file passes ``--require-empty``."""
+    with pytest.raises(PendingRegenError, match="ragas_paths RM-15"):
+        assert_pending_empty(_LISTED)
+    assert main(["--require-empty"]) == 0
+    assert main([]) == 2
 
 
 def test_empty_file_is_a_noop() -> None:

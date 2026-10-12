@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 from collections.abc import Collection, Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -295,6 +296,40 @@ def publish_review_warning() -> None:
         handle.write("## DS review required\n\n" + warning + "\n")
 
 
+def assert_pending_empty(text: str) -> None:
+    """Raise when a release or G0 still lists PENDING cases."""
+    pending = parse_pending_regen(text)
+    if not pending:
+        return
+    listed = ", ".join(f"{case_id} {pending[case_id]}" for case_id in sorted(pending))
+    raise PendingRegenError(f"PENDING_REGEN must be empty for release/G0: {listed}")
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Exit 1 when ``--require-empty`` sees PENDING cases.
+
+    G0 runs ``python3 -m tests.golden._compare --require-empty`` before
+    tagging. ``golden.yaml`` runs that command on ``workflow_dispatch``,
+    GitHub ``release`` events, and tag pushes. It does not run on
+    pull requests.
+    """
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args != ["--require-empty"]:
+        print(
+            "usage: python3 -m tests.golden._compare --require-empty",
+            file=sys.stderr,
+        )
+        return 2
+    path = Path(_PENDING_PATH)
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    try:
+        assert_pending_empty(text)
+    except PendingRegenError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    return 0
+
+
 def reject_unknown_cases(pending: Mapping[str, str], known: Collection[str]) -> None:
     """Raise ``PendingRegenError`` when an id is not a known golden case."""
     unknown = sorted(set(pending) - set(known))
@@ -322,3 +357,7 @@ def _keep(obj: Any) -> Any:
             item for item in (_keep(value) for value in obj) if item not in ({}, [])
         ]
     return {}
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

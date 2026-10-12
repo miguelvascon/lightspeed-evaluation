@@ -1,0 +1,6 @@
+{
+ "scripts/cleanup_0644.sh": "0755",
+ "scripts/setup_0644.sh": "0755",
+ "scripts/verify_0644.sh": "0755",
+ "scripts/verify_stripped.sh": "0644"
+}

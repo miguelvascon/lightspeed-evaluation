@@ -1,0 +1,411 @@
+{
+  "timestamp": "<TS>",
+  "total_evaluations": 7,
+  "summary_stats": {
+    "overall": {
+      "TOTAL": 7,
+      "PASS": 2,
+      "FAIL": 0,
+      "ERROR": 5,
+      "SKIPPED": 0,
+      "pass_rate": 28.57142857142857,
+      "fail_rate": 0.0,
+      "error_rate": 71.42857142857143,
+      "skipped_rate": 0.0,
+      "total_judge_llm_input_tokens": 0,
+      "total_judge_llm_output_tokens": 0,
+      "total_judge_llm_tokens": 0,
+      "total_embedding_tokens": 0,
+      "total_api_input_tokens": 2,
+      "total_api_output_tokens": 2,
+      "total_api_tokens": 4,
+      "total_tokens": 4
+    },
+    "by_metric": {
+      "custom:keywords_eval": {
+        "pass": 2,
+        "fail": 0,
+        "error": 5,
+        "skipped": 0,
+        "pass_rate": 28.57142857142857,
+        "fail_rate": 0.0,
+        "error_rate": 71.42857142857143,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 2,
+          "mean": 1.0,
+          "median": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 1.0,
+            "mean": 1.0,
+            "high": 1.0,
+            "confidence_level": 95.0
+          }
+        }
+      }
+    },
+    "by_conversation": {
+      "l10_args_flat": {
+        "pass": 1,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "l10_args_legacy": {
+        "pass": 1,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "l10_error_event": {
+        "pass": 0,
+        "fail": 0,
+        "error": 1,
+        "skipped": 0,
+        "pass_rate": 0.0,
+        "fail_rate": 0.0,
+        "error_rate": 100.0,
+        "skipped_rate": 0.0
+      },
+      "l10_no_conversation_id": {
+        "pass": 0,
+        "fail": 0,
+        "error": 1,
+        "skipped": 0,
+        "pass_rate": 0.0,
+        "fail_rate": 0.0,
+        "error_rate": 100.0,
+        "skipped_rate": 0.0
+      },
+      "l10_no_turn_complete": {
+        "pass": 0,
+        "fail": 0,
+        "error": 2,
+        "skipped": 0,
+        "pass_rate": 0.0,
+        "fail_rate": 0.0,
+        "error_rate": 100.0,
+        "skipped_rate": 0.0
+      },
+      "l11_http_error": {
+        "pass": 0,
+        "fail": 0,
+        "error": 1,
+        "skipped": 0,
+        "pass_rate": 0.0,
+        "fail_rate": 0.0,
+        "error_rate": 100.0,
+        "skipped_rate": 0.0
+      }
+    },
+    "by_tag": {
+      "eval": {
+        "pass": 2,
+        "fail": 0,
+        "error": 5,
+        "skipped": 0,
+        "pass_rate": 28.57142857142857,
+        "fail_rate": 0.0,
+        "error_rate": 71.42857142857143,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 2,
+          "mean": 1.0,
+          "median": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 1.0,
+            "mean": 1.0,
+            "high": 1.0,
+            "confidence_level": 95.0
+          }
+        }
+      }
+    },
+    "agent_latency_stats": {
+      "count": 6,
+      "mean": "<T>",
+      "median": "<T>",
+      "std": "<T>",
+      "min": "<T>",
+      "max": "<T>",
+      "p95": "<T>",
+      "p99": "<T>"
+    },
+    "streaming_performance": {
+      "time_to_first_token": {
+        "count": 2,
+        "mean": "<T>",
+        "median": "<T>",
+        "std": "<T>",
+        "min": "<T>",
+        "max": "<T>",
+        "p95": "<T>",
+        "p99": "<T>"
+      },
+      "streaming_duration": {
+        "count": 2,
+        "mean": "<T>",
+        "median": "<T>",
+        "std": "<T>",
+        "min": "<T>",
+        "max": "<T>",
+        "p95": "<T>",
+        "p99": "<T>"
+      },
+      "tokens_per_second": {
+        "count": 2,
+        "mean": "<T>",
+        "median": "<T>",
+        "std": "<T>",
+        "min": "<T>",
+        "max": "<T>",
+        "p95": "<T>",
+        "p99": "<T>"
+      }
+    }
+  },
+  "configuration": {
+    "llm": {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "ssl_verify": true,
+      "ssl_cert_file": null,
+      "temperature": 0.0,
+      "max_tokens": 512,
+      "timeout": 300,
+      "num_retries": 3,
+      "cache_enabled": false,
+      "parameters": {
+        "temperature": 0.0,
+        "max_completion_tokens": 512
+      }
+    },
+    "embedding": {
+      "provider": "openai",
+      "model": "text-embedding-3-small",
+      "provider_kwargs": null,
+      "cache_enabled": false
+    },
+    "api": {
+      "api_base": "http://localhost:8080",
+      "version": "v1",
+      "endpoint_type": "streaming",
+      "timeout": 300,
+      "provider": null,
+      "model": null,
+      "no_tools": null,
+      "system_prompt": null,
+      "extra_request_params": null,
+      "cache_enabled": false,
+      "num_retries": 3,
+      "enabled": true,
+      "mcp_headers": null
+    },
+    "agents": {
+      "enabled": true,
+      "default": {
+        "agent": [
+          "lsc"
+        ],
+        "agent_config": null,
+        "repeat": 1,
+        "parallel": false
+      },
+      "agents": {
+        "lsc": {
+          "description": null,
+          "api_base": "http://127.0.0.1:<PORT>/lsc",
+          "version": "v1",
+          "endpoint_type": "streaming",
+          "timeout": 10,
+          "provider": "openai",
+          "model": "gpt-4o-mini",
+          "no_tools": null,
+          "system_prompt": null,
+          "extra_request_params": null,
+          "cache_dir": ".caches/agent/lsc",
+          "cache_enabled": false,
+          "num_retries": 0,
+          "type": "http_api",
+          "mcp_headers": null
+        }
+      }
+    }
+  },
+  "results": [
+    {
+      "conversation_group_id": "l10_args_legacy",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 1.0,
+      "execution_time": "<T>",
+      "evaluation_latency": "<T>",
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "primary",
+          "score": 1.0,
+          "reason": "Keywords eval successful: Option 1 - all keywords matched: 'ok'",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0,
+          "verbose_logs": null
+        }
+      ],
+      "time_to_first_token": "<T>",
+      "streaming_duration": "<T>",
+      "agent_latency": "<T>",
+      "tokens_per_second": "<T>"
+    },
+    {
+      "conversation_group_id": "l10_args_flat",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 1.0,
+      "execution_time": "<T>",
+      "evaluation_latency": "<T>",
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "primary",
+          "score": 1.0,
+          "reason": "Keywords eval successful: Option 1 - all keywords matched: 'ok'",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0,
+          "verbose_logs": null
+        }
+      ],
+      "time_to_first_token": "<T>",
+      "streaming_duration": "<T>",
+      "agent_latency": "<T>",
+      "tokens_per_second": "<T>"
+    },
+    {
+      "conversation_group_id": "l10_no_turn_complete",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "ERROR",
+      "score": null,
+      "threshold": null,
+      "execution_time": "<T>",
+      "evaluation_latency": 0.0,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": null,
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": "<T>",
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "l10_no_turn_complete",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t2",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "ERROR",
+      "score": null,
+      "threshold": null,
+      "execution_time": 0.0,
+      "evaluation_latency": 0.0,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": null,
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": 0.0,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "l10_no_conversation_id",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "ERROR",
+      "score": null,
+      "threshold": null,
+      "execution_time": "<T>",
+      "evaluation_latency": 0.0,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": null,
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": "<T>",
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "l10_error_event",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "ERROR",
+      "score": null,
+      "threshold": null,
+      "execution_time": "<T>",
+      "evaluation_latency": 0.0,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": null,
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": "<T>",
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "l11_http_error",
+      "tag": [
+        "eval"
+      ],
+      "turn_id": "t1",
+      "metric_identifier": "custom:keywords_eval",
+      "result": "ERROR",
+      "score": null,
+      "threshold": null,
+      "execution_time": "<T>",
+      "evaluation_latency": 0.0,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": null,
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "agent_latency": "<T>",
+      "tokens_per_second": null
+    }
+  ]
+}

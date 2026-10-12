@@ -1,0 +1,3 @@
+{"body": "{\"query\":\"chmod me\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/query", "seq": 1}
+{"body": "{\"query\":\"verify me\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/query", "seq": 2}
+{"body": "{\"query\":\"stripped later\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\"}", "headers": {"accept": "*/*", "content-type": "application/json"}, "method": "POST", "path": "/v1/query", "seq": 3}

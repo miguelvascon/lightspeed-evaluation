@@ -1,0 +1,237 @@
+{
+ "routes": [
+  {
+   "path": "/v1/streaming_query",
+   "prompt": "tools without args legacy",
+   "responses": [
+    {
+     "status": 200,
+     "sse": [
+      {
+       "event": "start",
+       "data": {
+        "conversation_id": "conv-l10a"
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "tool_name": "args_missing"
+        }
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "tool_name": "args_null",
+         "arguments": null
+        }
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "tool_name": "args_empty_list",
+         "arguments": []
+        }
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "tool_name": "args_empty_string",
+         "arguments": ""
+        }
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "tool_name": "args_empty_dict",
+         "arguments": {}
+        }
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "arguments": {
+          "x": 1
+         }
+        }
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "tool_name": "",
+         "arguments": {
+          "x": 2
+         }
+        }
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "tool_name": null,
+         "arguments": {
+          "x": 3
+         }
+        }
+       }
+      },
+      {
+       "event": "tool_call",
+       "data": {
+        "token": {
+         "tool_name": "get_pods",
+         "arguments": {
+          "namespace": "payments"
+         }
+        }
+       }
+      },
+      {
+       "event": "turn_complete",
+       "data": {
+        "token": "ok"
+       }
+      },
+      {
+       "event": "end",
+       "data": {
+        "input_tokens": 1,
+        "output_tokens": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "/v1/streaming_query",
+   "prompt": "tools without args flat",
+   "new_conversation_id": "conv-l10b",
+   "responses": [
+    {
+     "turn": {
+      "response": "ok",
+      "sse_tool_call_form": "flat",
+      "input_tokens": 1,
+      "output_tokens": 1,
+      "tool_calls": [
+       {
+        "name": "flat_args_missing",
+        "id": "c1"
+       },
+       {
+        "name": "flat_args_null",
+        "args": null,
+        "id": "c2"
+       },
+       {
+        "args": {
+         "y": 1
+        },
+        "id": "c3"
+       },
+       {
+        "name": "get_pods",
+        "args": {
+         "namespace": "payments"
+        },
+        "id": "c4"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "path": "/v1/streaming_query",
+   "prompt": "no turn complete",
+   "new_conversation_id": "conv-l10c",
+   "responses": [
+    {
+     "turn": {
+      "response": "partial",
+      "omit_events": [
+       "turn_complete"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "path": "/v1/streaming_query",
+   "prompt": "no start event",
+   "responses": [
+    {
+     "status": 200,
+     "sse": [
+      {
+       "event": "turn_complete",
+       "data": {
+        "token": "answer without id"
+       }
+      },
+      {
+       "event": "end",
+       "data": {
+        "input_tokens": 1,
+        "output_tokens": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "/v1/streaming_query",
+   "prompt": "error event",
+   "responses": [
+    {
+     "status": 200,
+     "sse": [
+      {
+       "event": "start",
+       "data": {
+        "conversation_id": "conv-l10d"
+       }
+      },
+      {
+       "event": "error",
+       "data": {
+        "token": "Unable to connect to Llama Stack"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "/v1/streaming_query",
+   "prompt": "http 422",
+   "responses": [
+    {
+     "status": 422,
+     "json": {
+      "detail": {
+       "response": "Invalid query",
+       "cause": "query too short"
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

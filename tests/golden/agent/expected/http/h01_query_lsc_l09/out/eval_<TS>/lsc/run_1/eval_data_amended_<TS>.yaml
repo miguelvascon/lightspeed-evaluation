@@ -1,0 +1,158 @@
+- conversation_group_id: query_tools
+  metadata: null
+  description: null
+  tag:
+  - eval
+  skip: false
+  skip_reason: null
+  conversation_metrics: null
+  conversation_metrics_metadata: null
+  turns:
+  - time_to_first_token: null
+    streaming_duration: null
+    tokens_per_second: null
+    turn_id: t1
+    query: list pods in payments
+    attachments: null
+    extra_request_params: null
+    response: 'Pods in payments: api-1'
+    tool_calls:
+    - - tool_name: get_pods
+        arguments:
+          namespace: payments
+        result: api-1 Running
+    - - tool_name: get_logs
+        arguments:
+          pod: api-1
+    - - tool_name: no_args_tool
+        arguments: {}
+    - - tool_name: ''
+        arguments:
+          x: 1
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - payments
+    expected_response: null
+    expected_tool_calls:
+    - - - tool_name: get_pods
+          arguments:
+            namespace: pay.*
+      - - tool_name: get_logs
+          arguments:
+            pod: api-1
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: conv-query-001
+    api_input_tokens: 7
+    api_output_tokens: 11
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    - custom:tool_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  setup_script: null
+  cleanup_script: null
+  skip_on_failure: null
+  agent: null
+  agent_config: null
+- conversation_group_id: query_turn_form
+  metadata: null
+  description: null
+  tag:
+  - eval
+  skip: false
+  skip_reason: null
+  conversation_metrics: null
+  conversation_metrics_metadata: null
+  turns:
+  - time_to_first_token: null
+    streaming_duration: null
+    tokens_per_second: null
+    turn_id: t1
+    query: first question
+    attachments: null
+    extra_request_params: null
+    response: first answer
+    tool_calls:
+    - - tool_name: no_args_tool
+        arguments: {}
+    - - tool_name: null_args_tool
+        arguments: {}
+    - - tool_name: ''
+        arguments:
+          x: 1
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - first
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: conv-query-002
+    api_input_tokens: 2
+    api_output_tokens: 2
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  - time_to_first_token: null
+    streaming_duration: null
+    tokens_per_second: null
+    turn_id: t2
+    query: second question
+    attachments: null
+    extra_request_params: null
+    response: second answer
+    tool_calls: null
+    contexts: null
+    expected_contexts: null
+    expected_keywords:
+    - - second
+    expected_response: null
+    expected_tool_calls: null
+    expected_intent: null
+    expected_outcome: null
+    expected_analysis_outcome: null
+    expected_execution_outcome: null
+    expected_verification_outcome: null
+    conversation_id: conv-query-002
+    api_input_tokens: 3
+    api_output_tokens: 2
+    agent_latency: <T>
+    turn_metrics:
+    - custom:keywords_eval
+    turn_metrics_metadata: null
+    verify_script: null
+    description: null
+    openshift_agentic_run_spec: null
+    expected_openshift_agentic_run_status: null
+    openshift_agentic_run_status: null
+    openshift_agentic_run_results: null
+    openshift_agentic_run_phases: null
+  setup_script: null
+  cleanup_script: null
+  skip_on_failure: null
+  agent: null
+  agent_config: null

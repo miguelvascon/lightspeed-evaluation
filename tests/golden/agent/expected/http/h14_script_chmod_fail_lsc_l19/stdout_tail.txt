@@ -1,0 +1,3 @@
+✅ All data validation passed (API mode - data will be enhanced via API)
+
+❌ Evaluation failed: Conversation locked: Setup script is not executable: <NOEXEC_TARGET>

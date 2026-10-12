@@ -1,0 +1,5 @@
+
+📊 3 evaluations completed
+📁 Reports generated in: <OUT>/eval_output/eval_<TS>/lsc/run_1
+✅ Pass: 2, ❌ Fail: 0, ⚠️ Error: 1, ⏭️ Skipped: 0
+⚠️ 1 evaluations had errors - check detailed report

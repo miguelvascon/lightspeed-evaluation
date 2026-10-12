@@ -1,0 +1,20 @@
+- conversation_group_id: setup_fails
+  setup_script: scripts/setup_fail.sh
+  cleanup_script: scripts/cleanup.sh
+  conversation_metrics: ["custom:loop_eval"]
+  turns:
+    - turn_id: t1
+      query: never sent 1
+      expected_keywords: [["x"]]
+      turn_metrics: ["custom:keywords_eval"]
+    - turn_id: t2
+      query: never sent 2
+      verify_script: scripts/verify_ok.sh
+      turn_metrics: ["custom:keywords_eval", "script:action_eval"]
+      expected_keywords: [["x"]]
+- conversation_group_id: unaffected
+  turns:
+    - turn_id: t1
+      query: still runs
+      expected_keywords: [["runs"]]
+      turn_metrics: ["custom:keywords_eval"]

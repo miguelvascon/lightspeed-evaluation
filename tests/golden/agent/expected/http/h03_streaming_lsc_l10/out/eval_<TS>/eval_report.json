@@ -1,0 +1,27 @@
+{
+  "summary": {
+    "timestamp": "<TS>",
+    "total_agents": 1,
+    "total_runs": 1,
+    "repeat": 1
+  },
+  "agents": {
+    "lsc": {
+      "agent_name": "lsc",
+      "runs_requested": 1,
+      "runs_succeeded": 1,
+      "conversations_count": 6,
+      "overall": {
+        "pass_rate_mean": 28.57142857142857,
+        "pass_rate_std": 0.0,
+        "agent_latency_mean": "<T>",
+        "agent_latency_std": 0.0,
+        "total_agent_tokens": 4.0,
+        "total_judge_tokens": 0.0,
+        "total_embedding_tokens": 0.0,
+        "agent_tokens_mean": 4.0,
+        "judge_tokens_mean": 0.0
+      }
+    }
+  }
+}

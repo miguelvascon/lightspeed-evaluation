@@ -1,0 +1,21 @@
+- conversation_group_id: chmod_at_load
+  setup_script: scripts/setup_0644.sh
+  cleanup_script: scripts/cleanup_0644.sh
+  turns:
+    - turn_id: t1
+      query: chmod me
+      expected_keywords: [["done"]]
+      turn_metrics: ["custom:keywords_eval"]
+- conversation_group_id: verify_0644_at_load
+  turns:
+    - turn_id: t1
+      query: verify me
+      verify_script: scripts/verify_0644.sh
+      turn_metrics: ["script:action_eval"]
+- conversation_group_id: runtime_strip
+  setup_script: scripts/strip_verify.sh
+  turns:
+    - turn_id: t1
+      query: stripped later
+      verify_script: scripts/verify_stripped.sh
+      turn_metrics: ["script:action_eval"]

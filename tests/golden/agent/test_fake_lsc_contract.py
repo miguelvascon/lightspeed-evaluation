@@ -245,3 +245,9 @@ def test_bad_scripts_fail_at_load(tmp_path: Path, bad: dict[str, Any]) -> None:
     """Reject a malformed script at load, before any request."""
     with pytest.raises(ScriptError):
         FakeLsc.from_script(bad, tmp_path / "log.jsonl")
+
+
+def test_non_dict_route_raises_script_error(tmp_path: Path) -> None:
+    """A route that is not a dict raises ScriptError, not AttributeError."""
+    with pytest.raises(ScriptError, match="route 0 must be a dict"):
+        FakeLsc.from_script({"routes": ["not-a-dict"]}, tmp_path / "log.jsonl")

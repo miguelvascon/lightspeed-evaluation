@@ -1,0 +1,17 @@
+{
+ "routes": [
+  {
+   "path": "/v1/query",
+   "prompt": "still runs",
+   "responses": [
+    {
+     "status": 200,
+     "json": {
+      "conversation_id": "c-h10",
+      "response": "it runs"
+     }
+    }
+   ]
+  }
+ ]
+}

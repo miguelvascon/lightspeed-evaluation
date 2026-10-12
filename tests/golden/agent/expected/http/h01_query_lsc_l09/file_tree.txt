@@ -1,0 +1,8 @@
+eval_<TS>/eval_report.json
+eval_<TS>/lsc/agent_report.json
+eval_<TS>/lsc/run_1/eval_data_amended_<TS>.yaml
+eval_<TS>/lsc/run_1/evaluation_<TS>_detailed.csv
+eval_<TS>/lsc/run_1/evaluation_<TS>_summary.json
+eval_data_amended_<TS>.yaml
+evaluation_<TS>_detailed.csv
+evaluation_<TS>_summary.json

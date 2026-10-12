@@ -1,0 +1,25 @@
+# golden WP0b fixture; placeholders replaced by tests/golden/agent/conftest.py
+core: {max_threads: 1, cache_enabled: false}
+llm: {provider: openai, model: gpt-4o-mini, temperature: 0.0, cache_enabled: false}
+embedding: {provider: openai, model: text-embedding-3-small, cache_enabled: false}
+agents:
+  enabled: true
+  default:
+    agent: lsc
+  lsc:
+    type: http_api
+    api_base: "@LSC_BASE@"
+    version: v1
+    endpoint_type: query
+    provider: openai
+    model: gpt-4o-mini
+    timeout: 10
+    num_retries: 0
+    cache_enabled: false
+metrics_metadata:
+  turn_level:
+    "custom:keywords_eval": {threshold: 1}
+    "script:action_eval": {threshold: 1}
+storage:
+  - {type: file, output_dir: ./eval_output, base_filename: evaluation, enabled_outputs: [csv, json]}
+visualization: {enabled_graphs: []}

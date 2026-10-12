@@ -1,0 +1,17 @@
+id: wp0b.h14_script_chmod_fail_lsc_l19
+parity: [L19]
+summary: >-
+  lsc L19, failure half: the setup script cannot be chmodded at load ->
+  DataValidationError, the whole run fails at load: exit 1, no rows, no
+  eval_output, no lsc request, frozen "Setup script is not executable"
+  text. Portability: scripts/locked_setup.sh is created by the test as a
+  symlink to a regular, non-executable file this process does not own
+  (noexec_link: probe). EM ruling 4: the test SKIPS with an explicit
+  reason when os.geteuid() == 0; otherwise it picks the first candidate
+  whose no-op chmod (same mode) raises PermissionError (skip if none), so
+  nothing outside tmp is ever modified.
+  The resolved target path is normalized to <NOEXEC_TARGET>.
+exit_code: 1
+noexec_link: {scripts/locked_setup.sh: probe}
+assert: [lsc_requests, file_tree, stdout_tail]
+agent_latency: n/a   # EM ruling 10 (legs/legs_report.json)

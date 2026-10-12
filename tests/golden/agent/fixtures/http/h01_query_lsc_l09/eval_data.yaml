@@ -1,0 +1,21 @@
+- conversation_group_id: query_tools
+  turns:
+    - turn_id: t1
+      query: list pods in payments
+      expected_keywords: [["payments"]]
+      expected_tool_calls:
+        - - tool_name: get_pods
+            arguments: {namespace: "pay.*"}
+        - - tool_name: get_logs
+            arguments: {pod: api-1}
+      turn_metrics: ["custom:keywords_eval", "custom:tool_eval"]
+- conversation_group_id: query_turn_form
+  turns:
+    - turn_id: t1
+      query: first question
+      expected_keywords: [["first"]]
+      turn_metrics: ["custom:keywords_eval"]
+    - turn_id: t2
+      query: second question
+      expected_keywords: [["second"]]
+      turn_metrics: ["custom:keywords_eval"]

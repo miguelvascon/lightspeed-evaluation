@@ -1,4 +1,4 @@
-id: wp0b.h01_query_lsc_L09
+id: wp0b.h01_query_lsc_l09
 parity: [L09, L01, L02]
 summary: >-
   /v1/query. Tool calls in OLS name/args form, legacy tool_name/arguments

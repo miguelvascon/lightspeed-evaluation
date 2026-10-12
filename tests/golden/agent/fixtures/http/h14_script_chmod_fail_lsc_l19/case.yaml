@@ -1,4 +1,4 @@
-id: wp0b.h14_script_chmod_fail_lsc_L19
+id: wp0b.h14_script_chmod_fail_lsc_l19
 parity: [L19]
 summary: >-
   lsc L19, failure half: the setup script cannot be chmodded at load ->

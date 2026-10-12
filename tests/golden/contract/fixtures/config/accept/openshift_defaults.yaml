@@ -1,0 +1,17 @@
+core:
+  cache_enabled: false
+  cache_base_dir: .caches
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.0
+logging:
+  source_level: WARNING
+  package_level: WARNING
+agents:
+  enabled: true
+  default:
+    agent: [cluster]
+  cluster:
+    type: openshift_agentic_run
+    namespace: eval

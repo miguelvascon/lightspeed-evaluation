@@ -1,0 +1,4 @@
+{
+  "type": "ConfigurationError",
+  "message": "Metric 'custom:not_a_metric' is listed in quality_score.metrics but not defined in metrics_metadata.turn_level or metrics_metadata.conversation_level. Please add metadata configuration for this metric before using it in quality_score."
+}

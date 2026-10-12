@@ -1,0 +1,4 @@
+{
+  "type": "ValidationError",
+  "message": "1 validation error for QualityScoreConfig\nmetrics\n  Value error, Quality score metrics contains duplicates: {'custom:keywords_eval'}. Each metric should appear only once. [type=value_error, input_value=['custom:keywords_eval', 'custom:keywords_eval'], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error"
+}

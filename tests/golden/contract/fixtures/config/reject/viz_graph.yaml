@@ -1,0 +1,7 @@
+core:
+  cache_enabled: false
+visualization:
+  enabled_graphs:
+  - not_a_graph
+agents:
+  enabled: false

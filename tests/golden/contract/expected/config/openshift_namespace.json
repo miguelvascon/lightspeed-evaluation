@@ -1,0 +1,4 @@
+{
+  "type": "ValidationError",
+  "message": "2 validation errors for SystemConfig\nagents.agents.cluster.HttpApiAgentConfig.type\n  Input should be 'http_api' [type=literal_error, input_value='openshift_agentic_run', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.12/v/literal_error\nagents.agents.cluster.OpenshiftAgenticRunAgentConfig.namespace\n  Field required [type=missing, input_value={'type': 'openshift_agentic_run'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+}

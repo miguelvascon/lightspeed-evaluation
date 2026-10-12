@@ -42,7 +42,12 @@ def _clamp_score(score: float) -> float:
 
     Ragas metrics can sometimes return values like 1.0000000000000007 due to
     floating-point arithmetic, which would fail Pydantic validation.
+
+    NaN is returned unchanged. Clamping it would turn a failed metric into a
+    silent 1.0 pass, because ``min(1.0, nan)`` evaluates to ``1.0``.
     """
+    if math.isnan(score):
+        return score
     return max(0.0, min(1.0, score))
 
 

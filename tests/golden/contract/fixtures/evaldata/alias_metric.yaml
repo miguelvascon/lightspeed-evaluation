@@ -1,0 +1,10 @@
+- conversation_group_id: alias
+  turns:
+  - turn_id: t1
+    query: hi
+    response: hello
+    contexts:
+    - a document
+    expected_response: hello
+    turn_metrics:
+    - ragas:context_precision_with_reference

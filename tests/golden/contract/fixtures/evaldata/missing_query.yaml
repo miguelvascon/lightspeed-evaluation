@@ -1,0 +1,4 @@
+- conversation_group_id: missing
+  turns:
+  - turn_id: t1
+    response: hello

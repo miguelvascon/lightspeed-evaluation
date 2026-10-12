@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "Validation error in conversation 'missing': turns -> 0: Value error, query is required when openshift_agentic_run_spec is not provided",
+  "validation_errors": []
+}

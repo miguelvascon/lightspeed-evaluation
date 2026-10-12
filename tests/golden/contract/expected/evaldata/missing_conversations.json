@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "YAML root is a dict but missing required 'conversations' key. Expected either a list of conversations or a dict with 'conversations' (and optional 'metadata') keys.",
+  "validation_errors": []
+}

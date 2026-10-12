@@ -1,0 +1,12 @@
+metadata:
+  description: demo set
+  dataset_version: "1"
+conversations:
+- conversation_group_id: alpha
+  tag:
+  - keywords
+  - other
+  turns:
+  - turn_id: t1
+    query: hi
+    response: hello

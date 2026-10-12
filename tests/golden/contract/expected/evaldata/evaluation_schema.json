@@ -1,0 +1,822 @@
+{
+  "$defs": {
+    "ConversationMetadata": {
+      "additionalProperties": false,
+      "description": "Optional user-defined metadata for a conversation group.",
+      "properties": {
+        "scenario_category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Scenario category (e.g. Core/Happy path, Edge Case, Negative/Adversarial, Negative/Ambiguous, Negative/I-dont-know)",
+          "title": "Scenario Category"
+        },
+        "use_case": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "System capability (e.g. RAG, Agent/Tools)",
+          "title": "Use Case"
+        },
+        "interaction_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Interaction type (e.g. Single-turn, Multi-turn)",
+          "title": "Interaction Type"
+        },
+        "topic": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Domain subject area (e.g. networking, storage)",
+          "title": "Topic"
+        },
+        "jtbd_reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Jobs-to-be-done reference (Job/Task)",
+          "title": "Jtbd Reference"
+        },
+        "complexity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Complexity level (e.g. Simple, Moderate, Complex)",
+          "title": "Complexity"
+        },
+        "data_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Data source (e.g. Human-written, Production log, Synthetic)",
+          "title": "Data Source"
+        },
+        "human_verified": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether a domain expert verified this conversation",
+          "title": "Human Verified"
+        },
+        "verified_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Verifier name or ID",
+          "title": "Verified By"
+        },
+        "persona": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "User persona represented (e.g. developer, admin, beginner)",
+          "title": "Persona"
+        },
+        "additional_metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Arbitrary key-value pairs for extra metadata",
+          "title": "Additional Metadata"
+        }
+      },
+      "title": "ConversationMetadata",
+      "type": "object"
+    },
+    "TurnData": {
+      "additionalProperties": false,
+      "description": "Individual turn data within a conversation.",
+      "properties": {
+        "time_to_first_token": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Time to first token in seconds (streaming only)",
+          "title": "Time To First Token"
+        },
+        "streaming_duration": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Total streaming duration in seconds (streaming only)",
+          "title": "Streaming Duration"
+        },
+        "tokens_per_second": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Output tokens per second throughput (streaming only)",
+          "title": "Tokens Per Second"
+        },
+        "turn_id": {
+          "description": "Turn ID (alphanumeric)",
+          "minLength": 1,
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Query \u2014 auto-populated from openshift_agentic_run_spec.request when absent",
+          "title": "Query"
+        },
+        "attachments": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "minItems": 0,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Attachments",
+          "title": "Attachments"
+        },
+        "extra_request_params": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Extra parameters merged into API request payload (overrides system defaults)",
+          "title": "Extra Request Params"
+        },
+        "response": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Actual Response - populated by API if enabled",
+          "title": "Response"
+        },
+        "tool_calls": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Actual Tool calls - populated by API if enabled",
+          "title": "Tool Calls"
+        },
+        "contexts": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Contexts",
+          "title": "Contexts"
+        },
+        "expected_contexts": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected contexts for retrieval evaluation (ground truth)",
+          "title": "Expected Contexts"
+        },
+        "expected_keywords": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected keywords for keyword evaluation (list of alternatives)",
+          "title": "Expected Keywords"
+        },
+        "expected_response": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected response or list of responses for comparison",
+          "title": "Expected Response"
+        },
+        "expected_tool_calls": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected tool call sequences (with alternatives)",
+          "title": "Expected Tool Calls"
+        },
+        "expected_intent": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected intent for intent evaluation",
+          "title": "Expected Intent"
+        },
+        "expected_outcome": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected outcome for OpenShift agentic run evaluation correctness",
+          "title": "Expected Outcome"
+        },
+        "expected_analysis_outcome": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected analysis/diagnosis outcome for OpenShift agentic run evaluation",
+          "title": "Expected Analysis Outcome"
+        },
+        "expected_execution_outcome": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected execution/action outcome for OpenShift agentic run evaluation",
+          "title": "Expected Execution Outcome"
+        },
+        "expected_verification_outcome": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected verification outcome for OpenShift agentic run evaluation",
+          "title": "Expected Verification Outcome"
+        },
+        "conversation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Conversation ID - populated by API if enabled",
+          "title": "Conversation Id"
+        },
+        "api_input_tokens": {
+          "default": 0,
+          "description": "Input tokens used by API call",
+          "minimum": 0,
+          "title": "Api Input Tokens",
+          "type": "integer"
+        },
+        "api_output_tokens": {
+          "default": 0,
+          "description": "Output tokens used by API call",
+          "minimum": 0,
+          "title": "Api Output Tokens",
+          "type": "integer"
+        },
+        "agent_latency": {
+          "default": 0,
+          "description": "API call latency for this turn in seconds",
+          "minimum": 0,
+          "title": "Agent Latency",
+          "type": "number"
+        },
+        "turn_metrics": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Turn-specific metrics to evaluate (overrides system defaults)",
+          "title": "Turn Metrics"
+        },
+        "turn_metrics_metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Turn-specific metric configuration (overrides system defaults)",
+          "title": "Turn Metrics Metadata"
+        },
+        "verify_script": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Path to verify script for script-based evaluation",
+          "title": "Verify Script"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-readable label for reports",
+          "title": "Description"
+        },
+        "openshift_agentic_run_spec": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inline OpenShift agentic run spec for CRD-based agents",
+          "title": "Openshift Agentic Run Spec"
+        },
+        "expected_openshift_agentic_run_status": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected OpenShift agentic run status for assertion metrics",
+          "title": "Expected Openshift Agentic Run Status"
+        },
+        "openshift_agentic_run_status": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Raw CRD status populated by OpenshiftAgenticRunDriver",
+          "title": "Openshift Agentic Run Status"
+        },
+        "openshift_agentic_run_results": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Structured results from child Result CRs, populated by OpenshiftAgenticRunAmender",
+          "title": "Openshift Agentic Run Results"
+        },
+        "openshift_agentic_run_phases": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Workflow phases that actually executed (e.g. ['analysis', 'execution'])",
+          "title": "Openshift Agentic Run Phases"
+        }
+      },
+      "required": [
+        "turn_id"
+      ],
+      "title": "TurnData",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Complete evaluation data for a conversation group.",
+  "properties": {
+    "conversation_group_id": {
+      "description": "Unique conversation group identifier",
+      "minLength": 1,
+      "title": "Conversation Group Id",
+      "type": "string"
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ConversationMetadata"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "User-defined metadata for traceability and quality grading"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional description of the conversation group",
+      "title": "Description"
+    },
+    "tag": {
+      "default": [
+        "eval"
+      ],
+      "description": "Tag(s) for grouping and filtering conversations",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Tag",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "skip": {
+      "default": false,
+      "description": "Skip this conversation during evaluation",
+      "title": "Skip",
+      "type": "boolean"
+    },
+    "skip_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Why this conversation is skipped (documentation only)",
+      "title": "Skip Reason"
+    },
+    "conversation_metrics": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Conversation-level metrics to evaluate",
+      "title": "Conversation Metrics"
+    },
+    "conversation_metrics_metadata": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Conversation-level metric configuration",
+      "title": "Conversation Metrics Metadata"
+    },
+    "turns": {
+      "description": "Conversation turns - must have at least one",
+      "items": {
+        "$ref": "#/$defs/TurnData"
+      },
+      "minItems": 1,
+      "title": "Turns",
+      "type": "array"
+    },
+    "setup_script": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "format": "path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Path to setup script to run before conversation starts",
+      "title": "Setup Script"
+    },
+    "cleanup_script": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "format": "path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Path to cleanup script to run after conversation ends",
+      "title": "Cleanup Script"
+    },
+    "skip_on_failure": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Skip remaining turns when a turn evaluation fails (overrides system config)",
+      "title": "Skip On Failure"
+    },
+    "agent": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Agent name(s) for this conversation group (overrides agents.default.agent)",
+      "title": "Agent"
+    },
+    "agent_config": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Agent config overrides \u2014 flat dict (applies to all) or keyed by agent name",
+      "title": "Agent Config"
+    }
+  },
+  "required": [
+    "conversation_group_id",
+    "turns"
+  ],
+  "title": "EvaluationData",
+  "type": "object"
+}

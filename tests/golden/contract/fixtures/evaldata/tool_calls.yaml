@@ -1,0 +1,17 @@
+- conversation_group_id: tools
+  turns:
+  - turn_id: single
+    query: list pods
+    expected_tool_calls:
+    - - tool_name: oc_get
+        arguments:
+          kind: pods
+  - turn_id: multi
+    query: list or describe
+    expected_tool_calls:
+    - - - tool_name: oc_get
+          arguments:
+            kind: pods
+    - - - tool_name: oc_describe
+          arguments:
+            kind: pods

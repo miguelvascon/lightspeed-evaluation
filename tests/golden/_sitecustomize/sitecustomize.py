@@ -14,10 +14,18 @@ allowlisted fake directory ``tests/golden/harness/fake_oc`` (override with
 
 from __future__ import annotations
 
+import concurrent.futures
+import json
 import os
+import shutil
+import socket
 import subprocess
 from pathlib import Path
 from typing import Any
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.figure import Figure
 
 _FAKE_BIN = Path(__file__).resolve().parents[1] / "harness" / "fake_oc"
 _GUARDED_BINARIES = frozenset({"oc", "kubectl"})
@@ -26,7 +34,6 @@ _SPAWN = [subprocess.Popen]
 
 def _pin_as_completed() -> None:
     """Yield futures in the order they were passed to ``as_completed``."""
-    import concurrent.futures
 
     def as_completed(fs: Any, timeout: float | None = None) -> Any:
         futures = list(fs)
@@ -55,7 +62,6 @@ def _loopback(address: object) -> bool:
 
 def _guard_sockets() -> None:
     """Fail connects that leave the loopback interface."""
-    import socket
 
     def _wrap(real: Any) -> Any:
         def connect(self: Any, address: object) -> Any:
@@ -93,8 +99,6 @@ def _reject_real_binary(args: object) -> None:
         return
     candidate = Path(text)
     if not candidate.is_absolute():
-        import shutil
-
         found = shutil.which(name)
         if found is None:
             raise OSError(f"golden isolation: {name} is not the allowlisted fake")
@@ -125,8 +129,6 @@ def _labels(axis: Any) -> list[str]:
 def _heatmap(
     collection: Any, xticks: list[str], yticks: list[str]
 ) -> list[dict[str, Any]]:
-    import numpy as np
-
     values = np.asarray(collection.get_array(), dtype=float)
     if (
         values.ndim == 1
@@ -149,9 +151,16 @@ def _heatmap(
     return rows
 
 
-def _axis(ax: Any) -> dict[str, Any]:
-    xticks = _labels(ax.xaxis)
-    yticks = _labels(ax.yaxis)
+def _tick(names: list[str], index: int) -> str:
+    return names[index] if index < len(names) else str(index)
+
+
+def _artist_groups(ax: Any, xticks: list[str], yticks: list[str]) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
     bars: list[dict[str, Any]] = []
     boxes: list[dict[str, Any]] = []
     wedges: list[dict[str, Any]] = []
@@ -159,19 +168,23 @@ def _axis(ax: Any) -> dict[str, Any]:
     for patch in ax.patches:
         kind = type(patch).__name__
         if kind == "Wedge":
-            label = (
-                xticks[len(wedges)] if len(wedges) < len(xticks) else str(len(wedges))
-            )
             span = float(patch.theta2) - float(patch.theta1)
-            wedges.append({"key": label, "span": span})
+            wedges.append({"key": _tick(xticks, len(wedges)), "span": span})
         elif kind == "PathPatch":
-            label = yticks[len(boxes)] if len(boxes) < len(yticks) else str(len(boxes))
-            boxes.append({"key": label})
+            boxes.append({"key": _tick(yticks, len(boxes))})
         elif kind == "Rectangle":
-            label = xticks[len(bars)] if len(bars) < len(xticks) else str(len(bars))
-            bars.append({"key": label, "height": float(patch.get_height())})
+            bars.append(
+                {"key": _tick(xticks, len(bars)), "height": float(patch.get_height())}
+            )
         else:
             patches.append({"type": kind})
+    return bars, boxes, wedges, patches
+
+
+def _axis(ax: Any) -> dict[str, Any]:
+    xticks = _labels(ax.xaxis)
+    yticks = _labels(ax.yaxis)
+    bars, boxes, wedges, patches = _artist_groups(ax, xticks, yticks)
     heatmap: list[dict[str, Any]] = []
     collections: list[dict[str, Any]] = []
     for collection in ax.collections:
@@ -205,11 +218,6 @@ def _axis(ax: Any) -> dict[str, Any]:
 
 def _install_savefig() -> None:
     """Dump size, dpi, bbox, rcParams, and per-axes plotted data beside the PNG."""
-    import json
-
-    import matplotlib.pyplot as plt
-    from matplotlib.figure import Figure
-
     original = Figure.savefig
 
     def savefig(self: Figure, *args: Any, **kwargs: Any) -> Any:
@@ -235,8 +243,6 @@ def _install_savefig() -> None:
 
 
 def _install() -> None:
-    import numpy as np
-
     _pin_as_completed()
     _install_savefig()
     _guard_sockets()

@@ -134,12 +134,8 @@ class TestClampScore:
         """Finite scores stay inside [0, 1], including float noise at the bounds."""
         assert _clamp_score(raw) == clamped
 
-
-class TestNanScoreReportedAsError:
-    """evaluate() turns a NaN Ragas score into the malformed-output error."""
-
     @pytest.mark.parametrize(
-        ("metric_class", "metric_name"),
+        "metric_case",
         [
             ("Faithfulness", "faithfulness"),
             ("ContextRelevance", "context_relevance"),
@@ -150,10 +146,10 @@ class TestNanScoreReportedAsError:
         ragas_metrics: RagasMetrics,
         turn_scope: EvaluationScope,
         mocker: MockerFixture,
-        metric_class: str,
-        metric_name: str,
+        metric_case: tuple[str, str],
     ) -> None:
         """A mocked NaN score is reported as an error, not a 1.0 pass."""
+        metric_class, metric_name = metric_case
         mocked = mocker.patch(
             f"lightspeed_evaluation.core.metrics.ragas.{metric_class}"
         )

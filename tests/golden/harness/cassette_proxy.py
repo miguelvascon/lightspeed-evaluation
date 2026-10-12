@@ -1,4 +1,4 @@
-"""Record-side judge proxy for ``record_cassettes.py`` (Miguel-only).
+r"""Record-side judge proxy for ``record_cassettes.py`` (Miguel-only).
 
 Replay is not here: the recorder replays through ``judge_server.JudgeReplay``.
 This module only answers the recorder's estimate and record passes:
@@ -9,7 +9,7 @@ This module only answers the recorder's estimate and record passes:
 
 It is a WP0a ``_http_server`` handler for the recorder's ``/t/<tag>/v1/...``
 routes (the tag separates concurrent CLI runs). The cassette line format and
-key are the ``judge_server`` contract: sha256("POST <path>\\n" + body) plus a
+key are the ``judge_server`` contract: sha256("POST <path>\n" + body) plus a
 per-key ordinal; entries are written sorted by key and ordinal with
 ``sort_keys`` and ``ensure_ascii=False``, keeping ``source`` and ``scrubbed``.
 """
@@ -93,7 +93,9 @@ class RecordingJudge:  # pylint: disable=too-many-instance-attributes
         status, payload = self.handle(path, body)
         return status, dict(JSON_HEADERS), json.dumps(payload).encode()
 
-    def handle(self, raw_path: str, raw: bytes) -> tuple[int, dict]:
+    def handle(  # pylint: disable=too-many-locals
+        self, raw_path: str, raw: bytes
+    ) -> tuple[int, dict]:
         """Answer one request: (status, JSON body)."""
         m = TAGGED.match(raw_path)
         tag, path = (m.group(1), m.group(2)) if m else ("default", raw_path)
@@ -120,7 +122,9 @@ class RecordingJudge:  # pylint: disable=too-many-instance-attributes
         else:
             with self.lock:
                 if self.cap is not None and self.forwarded >= self.cap:
-                    self.abort_reason = f"hard cap of {self.cap} upstream requests reached"
+                    self.abort_reason = (
+                        f"hard cap of {self.cap} upstream requests reached"
+                    )
                     return 400, {"error": {"message": self.abort_reason}}
                 self.forwarded += 1
             status, resp = self._forward(path, raw)
@@ -166,7 +170,9 @@ class RecordingJudge:  # pylint: disable=too-many-instance-attributes
             except ValueError:
                 return e.code, {"error": {"message": "non-JSON upstream error"}}
         except (urllib.error.URLError, TimeoutError, OSError) as e:
-            return 598, {"error": {"message": f"upstream unreachable: {type(e).__name__}"}}
+            return 598, {
+                "error": {"message": f"upstream unreachable: {type(e).__name__}"}
+            }
 
 
 # ------------------------------------------------------------------ cassettes

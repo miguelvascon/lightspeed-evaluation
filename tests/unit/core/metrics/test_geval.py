@@ -13,6 +13,57 @@ from pytest_mock import MockerFixture
 from lightspeed_evaluation.core.metrics.geval import GEvalHandler
 from lightspeed_evaluation.core.metrics.manager import MetricLevel
 
+_VALID_EVALUATION_OPTIONS = (
+    "query, response, expected_response, contexts, retrieval_context, "
+    "or LLMTestCaseParams names: INPUT, ACTUAL_OUTPUT, EXPECTED_OUTPUT, "
+    "CONTEXT, RETRIEVAL_CONTEXT, TOOLS_CALLED, EXPECTED_TOOLS, MCP_SERVERS, "
+    "MCP_TOOLS_CALLED, MCP_RESOURCES_CALLED, MCP_PROMPTS_CALLED"
+)
+
+
+def _unsupported_reason(bad: list[str]) -> str:
+    """Expected config error naming the bad entries and the valid options."""
+    return (
+        "Invalid GEval configuration: "
+        f"unsupported evaluation_params {bad}. "
+        f"Valid options: {_VALID_EVALUATION_OPTIONS}"
+    )
+
+
+def _evaluate_params(
+    handler: GEvalHandler,
+    mock_metric_manager: Any,
+    mocker: MockerFixture,
+    params: list[str],
+    is_conversation: bool,
+) -> Any:
+    """Run evaluate() with GEval patched so no judge is called."""
+    mock_geval_class = mocker.patch("lightspeed_evaluation.core.metrics.geval.GEval")
+    mock_metric = mocker.MagicMock()
+    mock_metric.score = 0.8
+    mock_metric.reason = "ok"
+    mock_geval_class.return_value = mock_metric
+    mock_metric_manager.get_metric_metadata.return_value = {
+        "criteria": "Judge the response.",
+        "evaluation_params": params,
+        "threshold": 0.7,
+    }
+    turn = mocker.MagicMock()
+    turn.query = "q"
+    turn.response = "r"
+    turn.expected_response = None
+    turn.contexts = None
+    conv_data = mocker.MagicMock()
+    conv_data.turns = [turn]
+    score, reason = handler.evaluate(
+        metric_name="custom_params",
+        conv_data=conv_data,
+        _turn_idx=None if is_conversation else 0,
+        turn_data=None if is_conversation else turn,
+        is_conversation=is_conversation,
+    )
+    return mock_geval_class, score, reason
+
 
 class TestGEvalHandler:
     """Test cases for GEvalHandler class."""
@@ -1043,3 +1094,67 @@ class TestGEvalHandler:
             is_conversation=False,
         )
         assert handler.last_verbose_logs is None
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            (False, ["query", "response"]),
+            (True, ["query", "response"]),
+            (False, ["INPUT", "actual output"]),
+            (True, ["INPUT", "actual output"]),
+            (False, []),
+            (True, []),
+        ],
+    )
+    def test_recognized_evaluation_params_map_unchanged(
+        self,
+        handler: GEvalHandler,
+        mock_metric_manager: Any,
+        mocker: MockerFixture,
+        case: tuple[bool, list[str]],
+    ) -> None:
+        """Recognized names, enum aliases, and an empty list keep today's mapping."""
+        is_conversation, params = case
+        mock_geval_class, score, _reason = _evaluate_params(
+            handler, mock_metric_manager, mocker, params, is_conversation
+        )
+
+        assert score == 0.8
+        assert mock_geval_class.call_args.kwargs["evaluation_params"] == [
+            LLMTestCaseParams.INPUT,
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+        ]
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            (
+                False,
+                ["tone of voice", "politeness"],
+                ["tone of voice", "politeness"],
+            ),
+            (
+                True,
+                ["tone of voice", "politeness"],
+                ["tone of voice", "politeness"],
+            ),
+            (False, ["query", "politeness"], ["politeness"]),
+            (True, ["query", "politeness"], ["politeness"]),
+        ],
+    )
+    def test_unsupported_evaluation_params_are_config_error(
+        self,
+        handler: GEvalHandler,
+        mock_metric_manager: Any,
+        mocker: MockerFixture,
+        case: tuple[bool, list[str], list[str]],
+    ) -> None:
+        """Unknown params, including a mix with recognized ones, are a config error."""
+        is_conversation, params, bad = case
+        mock_geval_class, score, reason = _evaluate_params(
+            handler, mock_metric_manager, mocker, params, is_conversation
+        )
+
+        assert score is None
+        assert reason == _unsupported_reason(bad)
+        mock_geval_class.assert_not_called()

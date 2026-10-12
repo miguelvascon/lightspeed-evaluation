@@ -68,7 +68,12 @@ jobs:
       - name: Install uv
         run: pip install --user uv
       - name: Install dependencies
-        run: uv sync --frozen --group dev --extra nlp-metrics
+        run: |
+          # Separate venv, no nlp-metrics extra, so nlp_without_extra can run.
+          UV_PROJECT_ENVIRONMENT="${RUNNER_TEMP}/golden-base" \
+            uv sync --frozen --group dev
+          echo "LS_GOLDEN_BASE_BIN=${RUNNER_TEMP}/golden-base/bin" >> "$GITHUB_ENV"
+          uv sync --frozen --group dev --extra nlp-metrics
       - name: Block non-loopback egress
         run: |
           sudo iptables-save > "${RUNNER_TEMP}/iptables.golden"

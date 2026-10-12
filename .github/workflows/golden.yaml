@@ -1,0 +1,86 @@
+name: Golden
+
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  regen-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fail mixed src and golden artifact changes
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
+        run: |
+          set -eu
+          git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" > /tmp/changed.txt
+          python3 - <<'PY'
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, ".")
+          from tests.golden._regen import regen_guard_blocks
+
+          changed = Path("/tmp/changed.txt").read_text(encoding="utf-8").splitlines()
+          labels = os.environ.get("LABELS", "").split()
+          if regen_guard_blocks(changed, labels):
+              sys.exit(
+                  "golden-regen guard: PR touches src/ and "
+                  "tests/golden/{expected,cassettes,fixtures}"
+              )
+          PY
+
+  golden:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    env:
+      PYTHONHASHSEED: "0"
+      TZ: UTC
+      LC_ALL: C.UTF-8
+      MPLBACKEND: Agg
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
+      HF_HUB_OFFLINE: "1"
+      LS_GOLDEN_NP_SEED: "0"
+      OPENAI_API_KEY: golden-fake
+      PYTHONPATH: ${{ github.workspace }}/tests/golden/_sitecustomize
+      LS_GOLDEN_COMPARE_PNG: ${{ matrix.python-version == '3.12' && '1' || '0' }}
+      LS_GOLDEN_ORDER_ONLY_OK: ${{ (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'golden-order-only-ok')) && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: pip install --user uv
+      - name: Install dependencies
+        run: uv sync --frozen --group dev --extra nlp-metrics
+      - name: Block non-loopback egress
+        run: |
+          sudo iptables -A OUTPUT -o lo -j ACCEPT
+          sudo iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+          sudo iptables -A OUTPUT -j REJECT
+          sudo ip6tables -A OUTPUT -o lo -j ACCEPT
+          sudo ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+          sudo ip6tables -A OUTPUT -j REJECT
+      - name: Golden runtime dirs
+        run: |
+          mkdir -p "${RUNNER_TEMP}/mplconfig"
+          echo "MPLCONFIGDIR=${RUNNER_TEMP}/mplconfig" >> "$GITHUB_ENV"
+          echo "OPENAI_BASE_URL=http://127.0.0.1:9/v1" >> "$GITHUB_ENV"
+      - name: Run golden tests
+        run: uv run pytest tests/golden -m golden

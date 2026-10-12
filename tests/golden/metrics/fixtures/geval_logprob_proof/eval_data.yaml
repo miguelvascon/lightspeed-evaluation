@@ -1,0 +1,15 @@
+# WP0c-1 GEval logprob proof: turn level without steps (step generation + scoring)
+# and conversation level with steps + rubric (scoring only).
+- conversation_group_id: geval_proof
+  description: GEval scored from hand-written logprobs (0.75 on "8", 0.25 on "7")
+  conversation_metrics:
+    - "geval:conversation_coherence"
+  turns:
+    - turn_id: t1
+      query: My namespace is called payments. How do I see its pods?
+      response: Run `oc get pods -n payments`.
+      expected_response: "`oc get pods -n payments`"
+      turn_metrics: ["geval:technical_accuracy"]
+    - turn_id: t2
+      query: And how do I see the logs of the pod named api-1 there?
+      response: Run `oc logs api-1 -n payments`.

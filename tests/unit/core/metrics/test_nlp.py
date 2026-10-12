@@ -148,6 +148,79 @@ class TestBLEUScore:
         assert "BLEU-4" in reason  # Falls back to default
         mock_bleu_class.assert_called_once_with(max_ngram_order=4)
 
+    def test_bleu_above_one_is_clamped(
+        self,
+        nlp_metrics: NLPMetrics,
+        sample_scope: EvaluationScope,
+        mocker: MockerFixture,
+    ) -> None:
+        """A sacrebleu score just over 100 becomes 1.0, not a validation error."""
+        mock_result = mocker.MagicMock()
+        mock_result.score = 100.00000000000004
+
+        mock_scorer_instance = mocker.MagicMock()
+        mock_scorer_instance.corpus_score = mocker.MagicMock(return_value=mock_result)
+
+        mock_bleu_class = mocker.MagicMock(return_value=mock_scorer_instance)
+        mock_sacrebleu = mocker.MagicMock()
+        mock_sacrebleu.BLEU = mock_bleu_class
+        mocker.patch.dict(sys.modules, {"sacrebleu": mock_sacrebleu})
+
+        score, reason = nlp_metrics.evaluate("bleu", None, sample_scope)
+
+        assert score == 1.0
+        assert reason == "NLP BLEU-4: 1.0000"
+
+
+def _identical_text_scope() -> EvaluationScope:
+    """Build a turn whose response matches the reference exactly."""
+    text = (
+        "A namespace provides isolation and scope for resources in OpenShift clusters."
+    )
+    return EvaluationScope(
+        turn_idx=0,
+        turn_data=TurnData(
+            turn_id="t1",
+            query="q",
+            response=text,
+            expected_response=text,
+        ),
+        is_conversation=False,
+    )
+
+
+class TestIdenticalTextBounds:
+    """Identical text must stay inside the unit interval for every NLP metric."""
+
+    def test_bleu_identical_text_real_sacrebleu(self, nlp_metrics: NLPMetrics) -> None:
+        """Real sacrebleu on identical text scores within [0, 1]."""
+        pytest.importorskip("sacrebleu")
+
+        score, _reason = nlp_metrics.evaluate("bleu", None, _identical_text_scope())
+
+        assert score is not None
+        assert 0.0 <= score <= 1.0
+
+    @pytest.mark.parametrize(
+        "metric_name",
+        ["rouge", "semantic_similarity_distance"],
+    )
+    def test_rouge_and_string_distance_at_most_one(
+        self, nlp_metrics: NLPMetrics, metric_name: str
+    ) -> None:
+        """ROUGE and string distance on identical text stay at or below 1.0."""
+        if metric_name == "rouge":
+            pytest.importorskip("rouge_score")
+        else:
+            pytest.importorskip("rapidfuzz")
+
+        score, _reason = nlp_metrics.evaluate(
+            metric_name, None, _identical_text_scope()
+        )
+
+        assert score is not None
+        assert score <= 1.0
+
 
 class TestROUGEScore:
     """Tests for ROUGE score metric."""

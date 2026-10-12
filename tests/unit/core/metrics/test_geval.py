@@ -244,6 +244,93 @@ class TestGEvalHandler:
 
         assert config is None
 
+    def test_get_geval_config_falls_back_to_deepeval_key(
+        self,
+        handler: GEvalHandler,
+        mock_metric_manager: Any,
+        mocker: MockerFixture,
+    ) -> None:
+        """A config that exists only under deepeval:<name> is returned."""
+        deepeval_config = {"criteria": "From deepeval", "threshold": 0.7}
+
+        def _lookup(metric_identifier: str, **_kwargs: Any) -> dict[str, Any] | None:
+            if metric_identifier == "deepeval:unconfigured":
+                return deepeval_config
+            return None
+
+        mock_metric_manager.get_metric_metadata.side_effect = _lookup
+        conv_data = mocker.MagicMock()
+
+        config = handler._get_geval_config(
+            metric_name="unconfigured",
+            conv_data=conv_data,
+            turn_data=None,
+            is_conversation=False,
+        )
+
+        assert config == deepeval_config
+        identifiers = [
+            call.kwargs["metric_identifier"]
+            for call in mock_metric_manager.get_metric_metadata.call_args_list
+        ]
+        assert identifiers == ["geval:unconfigured", "deepeval:unconfigured"]
+
+    def test_get_geval_config_geval_key_wins_when_both_exist(
+        self,
+        handler: GEvalHandler,
+        mock_metric_manager: Any,
+        mocker: MockerFixture,
+    ) -> None:
+        """When both keys exist, geval:<name> is used and deepeval:<name> is not."""
+        geval_config = {"criteria": "From geval", "threshold": 0.7}
+
+        def _lookup(metric_identifier: str, **_kwargs: Any) -> dict[str, Any] | None:
+            if metric_identifier == "geval:command_safety":
+                return geval_config
+            if metric_identifier == "deepeval:command_safety":
+                return {"criteria": "From deepeval", "threshold": 0.1}
+            return None
+
+        mock_metric_manager.get_metric_metadata.side_effect = _lookup
+        conv_data = mocker.MagicMock()
+
+        config = handler._get_geval_config(
+            metric_name="command_safety",
+            conv_data=conv_data,
+            turn_data=None,
+            is_conversation=False,
+        )
+
+        assert config == geval_config
+        mock_metric_manager.get_metric_metadata.assert_called_once()
+        assert (
+            mock_metric_manager.get_metric_metadata.call_args.kwargs[
+                "metric_identifier"
+            ]
+            == "geval:command_safety"
+        )
+
+    def test_evaluate_missing_both_config_keys(
+        self,
+        handler: GEvalHandler,
+        mock_metric_manager: Any,
+        mocker: MockerFixture,
+    ) -> None:
+        """Neither geval: nor deepeval: yields the existing not-found reason."""
+        mock_metric_manager.get_metric_metadata.return_value = None
+        conv_data = mocker.MagicMock()
+
+        score, reason = handler.evaluate(
+            metric_name="nope",
+            conv_data=conv_data,
+            _turn_idx=0,
+            turn_data=None,
+            is_conversation=False,
+        )
+
+        assert score is None
+        assert reason == "GEval configuration not found for metric 'nope'"
+
     def test_evaluate_missing_config(
         self,
         handler: GEvalHandler,

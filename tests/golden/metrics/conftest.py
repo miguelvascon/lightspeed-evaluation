@@ -16,23 +16,11 @@ from typing import Any
 
 import pytest
 
+from tests.golden._env import publish_openai_base_url
 from tests.golden.harness import judge_server
 
 FIXTURES = Path(__file__).with_name("fixtures")
 CASSETTES = Path(__file__).with_name("cassettes")
-_ROOT_CONFTEST = Path(__file__).resolve().parents[1] / "conftest.py"
-
-
-def publish_openai_base_url(url: str) -> None:
-    """Call WP0a's ``publish_openai_base_url`` on every loaded copy of its conftest.
-
-    pytest imports ``tests/golden/conftest.py`` as ``golden.conftest``, so
-    ``from tests.golden.conftest import ...`` would load a second copy whose
-    state the ``golden_env`` Popen hook never reads (reported to E1).
-    """
-    for module in list(sys.modules.values()):
-        if getattr(module, "__file__", None) == str(_ROOT_CONFTEST):
-            module.publish_openai_base_url(url)
 
 
 def _run_case(

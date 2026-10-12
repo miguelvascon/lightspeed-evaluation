@@ -1,0 +1,12 @@
+description: minimal happy-path set, one per judge response shape; the only fixture Miguel records (record_cassettes.py)
+covers:
+  - "#8 PASS/FAIL"
+  - "#9 PASS"
+  - "#10 PASS (6 ids)"
+  - "#12 PASS (3 ids)"
+  - "#13 step generation"
+  - "#14 PASS"
+  - "Q11 0.775 pin"
+python: golden
+expect_exit: 0
+unset_env: []

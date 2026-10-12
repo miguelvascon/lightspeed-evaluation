@@ -30,6 +30,9 @@ _WARN = re.compile(r"(?<![\w/])[\w./\\-]+\.py:\d+")
 # driver.py:172 eval-<id>-<8 hex> or eval-<8 hex>
 _CR = re.compile(r"\beval-((?:[a-z0-9]+-)*)([0-9a-f]{8})\b")
 _TMP = re.compile(r"(?<![\w])/(?:tmp|private/tmp|var/folders)(?:/[^\s\"']*)?")
+# DeepEval RetryError text embeds function reprs whose address changes per process.
+_ADDR = re.compile(r"0x[0-9a-fA-F]+")
+_MISSING: Any = object()
 _TIMING = frozenset(
     {
         "execution_time",
@@ -117,7 +120,7 @@ def _text(text: str, state: dict[str, Any]) -> str:
     text = _CR.sub(_suffix, text)
     for pattern, repl in _TEXT_SUBS:
         text = pattern.sub(repl, text)
-    return text
+    return normalize_addresses(text)
 
 
 def _scalar(key: str, value: Any, parent: dict[str, Any]) -> str | None:
@@ -135,15 +138,25 @@ def _scalar(key: str, value: Any, parent: dict[str, Any]) -> str | None:
     return None
 
 
-def _item(key: str, value: Any, parent: dict[str, Any], state: dict[str, Any]) -> Any:
-    if key in _SKIP:
-        return value
+def _special(key: str, value: Any, state: dict[str, Any]) -> Any:
     if key == "by_latency" and isinstance(value, list):
         return ["<TIMING_RANK>", *sorted(str(item) for item in value)]
     if key == "run_id" and isinstance(value, str):
         return _token(state["runs"], value, "RUN")
     if key in _TIMING_TREES:
         return _timing_tree(value)
+    if key == "polls" and isinstance(value, list):
+        normalized = [_apply(item, state) for item in value]
+        return collapse_polls(normalized)
+    return _MISSING
+
+
+def _item(key: str, value: Any, parent: dict[str, Any], state: dict[str, Any]) -> Any:
+    if key in state["keep"] or key in _SKIP:
+        return value
+    special = _special(key, value, state)
+    if special is not _MISSING:
+        return special
     replaced = _scalar(key, value, parent)
     if replaced is not None:
         return replaced
@@ -160,8 +173,18 @@ def _apply(obj: Any, state: dict[str, Any]) -> Any:
     return obj
 
 
-def normalize_obj(obj: Any, *, roots: Sequence[str] = ()) -> Any:
-    """Return a normalized copy of a JSON-like golden document."""
+def normalize_obj(
+    obj: Any,
+    *,
+    roots: Sequence[str] = (),
+    keep_exact: Sequence[str] = (),
+) -> Any:
+    """Return a normalized copy of a JSON-like golden document.
+
+    ``keep_exact`` names fields that stay byte-for-byte as written, including
+    timing fields such as ``agent_latency`` when a fixture has shown they do
+    not move across runs. The value is not recursed into.
+    """
     found: list[str] = []
     _collect_run_ids(obj, found)
     state: dict[str, Any] = {
@@ -169,8 +192,44 @@ def normalize_obj(obj: Any, *, roots: Sequence[str] = ()) -> Any:
         "suffixes": {},
         "ids": found,
         "roots": _roots(roots),
+        "keep": frozenset(keep_exact),
     }
     return _apply(obj, state)
+
+
+def normalize_addresses(text: str) -> str:
+    """Replace memory addresses (``0x`` plus hex) with ``<ADDR>``.
+
+    DeepEval ``RetryError`` text includes a function repr. The address
+    changes every process, so two runs of the same failure would not match.
+    """
+    return _ADDR.sub("<ADDR>", text)
+
+
+def collapse_polls(entries: str | Sequence[Any]) -> str | list[Any]:
+    """Collapse consecutive identical poll snapshots (SPEC-01 §5.1 G).
+
+    OpenShift golden fixtures poll once or twice (``driver.py`` sleep loop,
+    ``poll_interval``). An extra identical status read is not a contract
+    change. The first snapshot of each consecutive run is kept, and a
+    snapshot that differs starts a new run.
+
+    A string is a newline-separated poll transcript and is returned as a
+    string. ``normalize_obj`` applies this to a list stored under ``polls``
+    after the items themselves are normalized.
+    """
+    if isinstance(entries, str):
+        return "\n".join(_collapse_run(entries.split("\n")))
+    return _collapse_run(list(entries))
+
+
+def _collapse_run(items: Sequence[Any]) -> list[Any]:
+    kept: list[Any] = []
+    for item in items:
+        if kept and kept[-1] == item:
+            continue
+        kept.append(item)
+    return kept
 
 
 def normalize_text(text: str, *, roots: Sequence[str] = ()) -> str:

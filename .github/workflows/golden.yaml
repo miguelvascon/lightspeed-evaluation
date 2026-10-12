@@ -27,9 +27,12 @@ jobs:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
         run: |
           set -eu
-          # --no-renames keeps a moved-away src/ path. Without it, git mv
-          # folds the old path and both guards miss the src/ change.
-          git diff --name-only --no-renames "${BASE_SHA}" "${HEAD_SHA}" > /tmp/changed.txt
+          # Three-dot against the merge base, with --no-renames. A two-dot
+          # diff also lists src/ commits that landed on the base after this
+          # branch point, so a golden-only PR looks mixed. --no-renames
+          # keeps a moved-away src/ path; without it, git mv folds the old
+          # path and the guard misses the src/ change.
+          git diff --name-only --no-renames "${BASE_SHA}...${HEAD_SHA}" > /tmp/changed.txt
           git diff --name-only --no-renames "${BASE_SHA}...${HEAD_SHA}" > /tmp/pr-changed.txt
           git show "${BASE_SHA}:tests/golden/PENDING_REGEN" > /tmp/pending.base 2>/dev/null || true
           git show "${HEAD_SHA}:tests/golden/PENDING_REGEN" > /tmp/pending.head 2>/dev/null || true

@@ -19,6 +19,10 @@ Per-test and per-directory additions (storage fakes, ``API_KEY``, PATH):
 
   Marker kwargs win over the fixture override. Paths are prepended, in order,
   before the golden ``sitecustomize`` directory.
+
+``pytest_configure`` registers the ``golden`` marker for this directory and
+for ``tests/golden/harness/``. Harness tests do not need their own conftest
+to satisfy ``--strict-markers``.
 """
 
 from __future__ import annotations
@@ -191,6 +195,22 @@ def golden_env(
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(subprocess, "Popen", _popen)
     return env
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Register ``golden`` for this tree, including ``harness/``.
+
+    ``pytest.ini`` lists the marker too. This hook is what a harness test
+    sees when it is collected under ``tests/golden/`` without a local
+    ``harness/conftest.py``.
+    """
+    known = {str(line).split(":", 1)[0].strip() for line in config.getini("markers")}
+    if "golden" not in known:
+        config.addinivalue_line(
+            "markers",
+            "golden: Characterization tests that require the golden "
+            "determinism env (run by golden.yaml)",
+        )
 
 
 def pytest_terminal_summary(terminalreporter: Any) -> None:

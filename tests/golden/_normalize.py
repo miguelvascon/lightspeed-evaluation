@@ -1,9 +1,8 @@
 """Normalize golden artifacts (SPEC-01 §5.1).
 
-A value is rewritten only when it is wall-clock, a random id, or a path.
-Scores, thresholds, statuses, reasons (aside from embedded paths), token
-counts, and confidence intervals are left as written. Each pattern cites the
-source line at baseline ``1433c32``.
+Wall-clock values, random ids, and paths become placeholders. Scores,
+thresholds, statuses, reasons (aside from embedded paths), token counts, and
+confidence intervals stay as written. Patterns cite baseline ``1433c32``.
 """
 
 from __future__ import annotations

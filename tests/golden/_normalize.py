@@ -22,8 +22,11 @@ _ASCTIME = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}")
 # summary.py:86 generator.py:316,381 behavioral/models.py:131
 # protocol.py:28 sql_storage.py:360
 _ISO = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:\+00:00|Z)")
-# pipeline.py:250 tqdm
-_PROGRESS = re.compile(r"^.*\d+%\|.*$", re.M)
+# pipeline.py:250 tqdm default: "{pct}%|{bar}| {n}/{total} [{elapsed}<{remaining}, {rate}]"
+_PROGRESS = re.compile(
+    r"^(?:[^:\n]+:)?\s*\d{1,3}%\|.*\| \d+/\d+ \[[^\]]*\]\s*$",
+    re.M,
+)
 # runner tracebacks and warnings file:line (F2)
 _FRAME = re.compile(r'File "[^"]+", line \d+')
 _WARN = re.compile(r"(?<![\w/])[\w./\\-]+\.py:\d+")
@@ -66,10 +69,20 @@ def _token(table: dict[str, str], raw: str, kind: str) -> str:
     return table[raw]
 
 
-def _roots(extra: Sequence[str]) -> list[str]:
-    found = [str(Path.cwd()), tempfile.gettempdir(), *extra]
-    unique = {root for root in found if root and root not in {"/", "."}}
-    return sorted(unique, key=len, reverse=True)
+def _path_roots(extra: Sequence[str]) -> tuple[str, list[str]]:
+    """Split the checkout (``<REPO>``) from temp and output roots (``<OUT>``)."""
+    repo = str(Path.cwd())
+    if repo in {"/", "."}:
+        repo = ""
+    found = [tempfile.gettempdir(), *extra]
+    outs = {
+        root
+        for root in found
+        if root
+        and root not in {"/", ".", repo}
+        and not (repo and root.startswith(repo + "/"))
+    }
+    return repo, sorted(outs, key=len, reverse=True)
 
 
 def _collect_run_ids(obj: Any, found: list[str]) -> None:
@@ -98,20 +111,30 @@ def _timing_tree(value: Any) -> Any:
     return value
 
 
+def _replace_run_prefix(text: str, prefix: str, token: str) -> str:
+    """Replace an 8-hex run-id prefix only in known run-name contexts.
+
+    MLflow names the run ``eval_{run_id[:8]}`` (``mlflow_storage.py:175``).
+    Langfuse appends ``__{run_id[:8]}`` (``langfuse_storage.py:288``). A bare
+    8-hex string is left alone.
+    """
+    escaped = re.escape(prefix)
+    pattern = rf"(?:(?<=\beval_)|(?<=__)){escaped}(?![0-9a-fA-F])"
+    return re.sub(pattern, token, text)
+
+
 def _text(text: str, state: dict[str, Any]) -> str:
-    for root in state["roots"]:
+    repo = state["repo"]
+    if repo:
+        text = text.replace(repo, "<REPO>")
+    for root in state["outs"]:
         text = text.replace(root, "<OUT>")
     text = _TMP.sub("<OUT>", text)
     runs: dict[str, str] = state["runs"]
     for raw in state["ids"]:
         token = _token(runs, raw, "RUN")
         text = text.replace(raw, token)
-        prefix = raw[:8]
-        text = re.sub(
-            rf"(?<![0-9a-fA-F]){re.escape(prefix)}(?![0-9a-fA-F])",
-            token,
-            text,
-        )
+        text = _replace_run_prefix(text, raw[:8], token)
 
     def _suffix(match: re.Match[str]) -> str:
         token = _token(state["suffixes"], match.group(2), "SFX")
@@ -187,11 +210,13 @@ def normalize_obj(
     """
     found: list[str] = []
     _collect_run_ids(obj, found)
+    repo, outs = _path_roots(roots)
     state: dict[str, Any] = {
         "runs": {},
         "suffixes": {},
         "ids": found,
-        "roots": _roots(roots),
+        "repo": repo,
+        "outs": outs,
         "keep": frozenset(keep_exact),
     }
     return _apply(obj, state)

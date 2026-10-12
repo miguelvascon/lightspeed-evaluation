@@ -17,15 +17,17 @@ pytestmark = pytest.mark.golden
 
 
 def test_normalize_reason_paths() -> None:
-    """Workdir and tmp paths inside reason strings become ``<OUT>``."""
+    """The checkout becomes ``<REPO>`` and temp paths become ``<OUT>``."""
     work = str(Path.cwd() / "eval_output")
     scratch = "/tmp/golden-scratch/case"
     got = normalize_obj({"reason": f"read {work}/rows.csv and {scratch}/x.txt"})
-    assert isinstance(got["reason"], str)
-    assert work not in got["reason"]
-    assert scratch not in got["reason"]
-    assert "<OUT>" in got["reason"]
-    assert got["reason"].startswith("read ")
+    reason = got["reason"]
+    assert isinstance(reason, str)
+    assert work not in reason
+    assert scratch not in reason
+    assert (
+        reason == "read <REPO>/eval_output/rows.csv and <OUT>/golden-scratch/case/x.txt"
+    )
 
 
 def test_normalize_eval_suffix() -> None:
@@ -43,11 +45,23 @@ def test_normalize_eval_suffix() -> None:
 
 
 def test_normalize_run_id_prefix() -> None:
-    """A run id and the 8-hex prefix used in trace names share one token."""
+    """Rewrite an 8-hex run id only inside MLflow and Langfuse run names."""
     raw = "12345678-aaaa-bbbb-cccc-ddddeeeeffff"
-    got = normalize_obj({"run_id": raw, "trace": f"eval_{raw[:8]}"})
+    prefix = raw[:8]
+    got = normalize_obj(
+        {
+            "run_id": raw,
+            "trace": f"eval_{prefix}",
+            "dataset": f"evaluation__{prefix}",
+            "reason": f"hash {prefix} stays",
+            "longer": f"eval_{prefix}9abc",
+        }
+    )
     assert got["run_id"] == "<RUN1>"
     assert got["trace"] == "eval_<RUN1>"
+    assert got["dataset"] == "evaluation__<RUN1>"
+    assert got["reason"] == f"hash {prefix} stays"
+    assert got["longer"] == f"eval_{prefix}9abc"
 
 
 def test_normalize_sqlite_id_and_timestamp() -> None:
@@ -71,6 +85,20 @@ def test_normalize_sqlite_id_and_timestamp() -> None:
     assert got["execution_time"] == "<T>"
     assert got["evaluation_latency"] == 0.0
     assert got["confidence_interval"] == {"low": 0.1, "high": 0.2}
+
+
+def test_normalize_progress_bar_is_tqdm_shaped() -> None:
+    """Only a tqdm bar (percent, bar, count, timing) becomes ``<PROGRESS>``."""
+    bars = "\n".join(
+        (
+            "  0%|          | 0/4 [00:00<?, ?it/s]",
+            "100%|██████████| 4/4 [00:00<00:00, 10.00it/s]",
+            "Conversations:  50%|█████     | 2/4 [00:01<00:01,  1.50it/s]",
+        )
+    )
+    prose = "The score was 80%| of the labeled set"
+    assert normalize_text(bars) == "<PROGRESS>\n<PROGRESS>\n<PROGRESS>"
+    assert normalize_text(prose) == prose
 
 
 def test_normalize_memory_address() -> None:

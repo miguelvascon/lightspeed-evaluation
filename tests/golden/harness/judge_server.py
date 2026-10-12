@@ -23,6 +23,7 @@ import contextlib
 import difflib
 import hashlib
 import json
+import re
 import threading
 from collections.abc import Iterator, Mapping
 from pathlib import Path
@@ -32,11 +33,18 @@ from tests.golden.harness._http_server import serve as _serve
 
 ROUTES = ("/v1/chat/completions", "/v1/embeddings")
 MISS_STATUS = 599
+# The recorder runs several CLIs at once under /t/<tag>/v1; the tag is not keyed.
+_TAGGED = re.compile(r"^/t/[^/]+(/v1/.*)$")
 
 
 def replay_key(method: str, path: str, body: bytes) -> str:
     """Replay key: sha256 of method, path and raw body (record_cassettes.py layout)."""
     return hashlib.sha256(f"{method} {path}\n".encode() + body).hexdigest()
+
+
+def _untag(path: str) -> str:
+    m = _TAGGED.match(path)
+    return m.group(1) if m else path
 
 
 def load_cassette(path: Path) -> list[dict]:
@@ -76,13 +84,14 @@ class JudgeReplay:
 
     @staticmethod
     def handles(path: str) -> bool:
-        """True for the OpenAI routes this fake owns (lets WP0b share one server)."""
-        return path in ROUTES
+        """True for the OpenAI routes this fake owns, bare or under ``/t/<tag>``."""
+        return _untag(path) in ROUTES
 
     def handle(
         self, method: str, path: str, _headers: Mapping[str, str], body: bytes
     ) -> tuple[int, dict[str, str], bytes]:
         """Serve one request. Headers are ignored, so Authorization never matters."""
+        path = _untag(path)
         key = replay_key(method, path, body)
         text = body.decode("utf-8", errors="replace")
         with self._lock:

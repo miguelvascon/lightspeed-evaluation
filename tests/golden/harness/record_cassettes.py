@@ -45,18 +45,35 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import contextlib
+import csv
 import json
 import os
 import shutil
+import signal
+import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-import cassette_proxy as cp  # noqa: E402
-import judge_responses  # noqa: E402
+sys.path.insert(0, str(HERE.parents[2]))  # repo root: run as a script
+from tests.golden._normalize import normalize_addresses, normalize_obj  # noqa: E402
+from tests.golden.harness import cassette_proxy as cp  # noqa: E402
+from tests.golden.harness import judge_responses, judge_server  # noqa: E402
+from tests.golden.harness._http_server import serve  # noqa: E402
+
+SITE_DIR = HERE.parent / "_sitecustomize"  # WP0a: order pin, numpy seed, socket guard
+ENV_DROP_PREFIXES = (
+    "OPENAI_", "AZURE_", "ANTHROPIC_", "GEMINI_", "GOOGLE_", "WATSONX_",
+    "HOSTED_VLLM_", "LITELLM_", "LANGFUSE_", "MLFLOW_",
+)
+ENV_DROP_EXACT = {"API_KEY", "OLLAMA_HOST", "KUBECONFIG", "DEEPEVAL_API_KEY", "SSL_CERT_FILE"}
+CLI_PLACEHOLDER_KEY = "golden-fake"
+CSV_TIMING = {"execution_time", "evaluation_latency", "agent_latency",
+              "time_to_first_token", "streaming_duration", "tokens_per_second"}
 
 FIXTURE = "judge_happy_path"
 DEFAULT_UPSTREAM = "https://api.openai.com/v1"
@@ -81,27 +98,83 @@ def fixture_metrics(fixture_dir: Path) -> list[str]:
     return list(dict.fromkeys(seen))
 
 
+def cli_env(base_url: str, mpl_dir: str) -> dict:
+    """The CLI's env: placeholder key, §5.2 pins, WP0a sitecustomize; no provider vars."""
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith(ENV_DROP_PREFIXES) and k not in ENV_DROP_EXACT}
+    env.update({
+        "OPENAI_API_KEY": CLI_PLACEHOLDER_KEY,
+        "OPENAI_BASE_URL": base_url,
+        "PYTHONHASHSEED": "0", "TZ": "UTC", "LC_ALL": "C.UTF-8", "MPLBACKEND": "Agg",
+        "MPLCONFIGDIR": mpl_dir, "LITELLM_LOCAL_MODEL_COST_MAP": "True", "HF_HUB_OFFLINE": "1",
+        "TRANSFORMERS_OFFLINE": "1", "NO_PROXY": "127.0.0.1,localhost", "no_proxy": "127.0.0.1,localhost",
+        "PYTHONPATH": str(SITE_DIR) + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else ""),
+        "LS_GOLDEN_NP_SEED": "0", "PYTHONUNBUFFERED": "1",
+    })
+    for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy"):
+        env.pop(k, None)
+    return env
+
+
+def run_cli(exe: list[str], cwd: Path, cfg: tuple[Path, Path], out_dir: Path, env: dict,
+            proxy: cp.RecordingJudge, extra_args: tuple[str, ...] = (), timeout: int = 1800) -> int:
+    """Run the CLI; kill it if the proxy aborts (cap, upstream error) or it times out."""
+    cmd = exe + ["--system-config", str(cfg[0]), "--eval-data", str(cfg[1]),
+                 "--output-dir", str(out_dir), *extra_args]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with open(out_dir.parent / f"{out_dir.name}.cli.log", "w", encoding="utf-8") as logf:
+        with subprocess.Popen(cmd, cwd=cwd, env=env, stdout=logf, stderr=subprocess.STDOUT,
+                              start_new_session=True) as proc:
+            deadline = time.monotonic() + timeout
+            while proc.poll() is None:
+                if proxy.abort_reason or time.monotonic() > deadline:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                    proc.wait()
+                    return -9
+                time.sleep(0.2)
+    return proc.returncode
+
+
+def capture(out: Path, rc: int, roots: list[str]) -> dict:
+    """CSV rows and summary JSON, normalized with WP0a's ``_normalize``."""
+    rows: list[dict] = []
+    for path in sorted(out.glob("*_detailed.csv"))[:1]:
+        with open(path, newline="", encoding="utf-8") as f:
+            rows = [{k: (float(v) if k in CSV_TIMING and v else v) for k, v in row.items()}
+                    for row in csv.DictReader(f)]  # CSV timings as floats so _normalize masks them
+    sums = sorted(out.glob("*_summary.json"))
+    summary = json.loads(sums[0].read_text()) if sums else None
+    doc: Any = normalize_obj({"csv_rows": rows, "summary": summary}, roots=roots)
+    doc = json.loads(normalize_addresses(json.dumps(doc)))
+    return {"exit_code": rc, **doc}
+
+
 class Runner:
-    def __init__(self, repo: Path, fixture_dir: Path, work: Path, proxy: cp.JudgeProxy) -> None:
+    """Runs the CLI against one loopback server whose handler can be swapped."""
+
+    def __init__(self, repo: Path, fixture_dir: Path, work: Path, proxy: cp.RecordingJudge) -> None:
         self.repo, self.fx, self.work, self.proxy = repo, fixture_dir, work, proxy
-        self.guard = work / "guard"
-        cp.write_sitecustomize(self.guard)
         self.exe = ["uv", "run", "--no-sync", "lightspeed-eval"]
+        self.active: Any = proxy
+        self._stack = contextlib.ExitStack()
+        self.base = self._stack.enter_context(serve(lambda *a: self.active(*a)))
+
+    def close(self) -> None:
+        self._stack.close()
 
     def run(self, label: str, tag: str, metric: Optional[str] = None) -> tuple[int, Path]:
         out = self.work / label
-        env = cp.cli_env(self.proxy.base_url(tag), str(self.guard), str(self.work / "net.log"),
-                         str(self.work / f"mpl_{label}"))
+        env = cli_env(f"{self.base}/t/{tag}/v1", str(self.work / f"mpl_{label}"))
         args = ("--metrics", metric) if metric else ()
-        return cp.run_cli(self.exe, self.repo, self.fx / "system.yaml", self.fx / "eval_data.yaml",
-                          out, env, self.proxy, args), out
+        cfg = (self.fx / "system.yaml", self.fx / "eval_data.yaml")
+        return run_cli(self.exe, self.repo, cfg, out, env, self.proxy, args), out
 
     def capture(self, out: Path, rc: int) -> dict:
-        return cp.capture(out, rc, {str(out): "<OUT>", str(self.fx): "<FIXTURE>"})
+        return capture(out, rc, [str(out), str(self.fx)])
 
 
 def estimate(r: Runner, jobs: int) -> dict:
-    r.proxy.set_fake(judge_responses.respond)
+    r.proxy.set_fake()
     r.proxy.reset()
     metrics = fixture_metrics(r.fx)
     log(f"[estimate] hand-written judge, {len(metrics)} metrics + 1 full run (no network)")
@@ -189,7 +262,7 @@ def main() -> int:
             return 2
 
     work = Path(tempfile.mkdtemp(prefix="golden-record-"))
-    proxy = cp.JudgeProxy(judge_responses.respond)
+    proxy = cp.RecordingJudge(judge_responses.respond)
     r = Runner(repo, fixture_dir, work, proxy)
     try:
         est = estimate(r, args.jobs)
@@ -232,13 +305,13 @@ def main() -> int:
         rec_cap = r.capture(rec_out, rc)
 
         proxy.reset()
-        proxy.set_replay(cp.load_cassette(dest))
+        replay = judge_server.JudgeReplay(judge_server.load_cassette(dest))
+        r.active = replay.handle  # strict replay through judge_server (no upstream)
         rc2, rep_out = r.run("replay_run", "rec")
         rep_cap = r.capture(rep_out, rc2)
-        unused = proxy.unused()
-        blocked = (work / "net.log").read_text().splitlines() if (work / "net.log").exists() else []
+        unused = replay.unused()
         same = rep_cap["csv_rows"] == rec_cap["csv_rows"] and rep_cap["summary"] == rec_cap["summary"]
-        replay_ok = rc2 == 0 and not proxy.misses and not unused and same
+        replay_ok = rc2 == 0 and not replay.misses and not unused and same
         by_source: dict[str, int] = {}
         for e in entries:
             by_source[e["source"]] = by_source.get(e["source"], 0) + 1
@@ -251,9 +324,8 @@ def main() -> int:
             "scrubbed_bodies": sum(1 for e in entries if e["scrubbed"]),
             "per_key_conflicts": len(cp.per_key_conflicts(entries)),
             "secret_scan": "clean",
-            "replay": {"cli_exit": rc2, "misses": len(proxy.misses), "unused_keys": len(unused),
+            "replay": {"cli_exit": rc2, "misses": len(replay.misses), "unused_entries": len(unused),
                        "results_identical": same, "results_rows": len(rep_cap["csv_rows"])},
-            "non_loopback_attempts_blocked": len(blocked),
         }
         if args.dry_run:
             summary["dry_run_matches_estimate_keys"] = sorted(
@@ -266,12 +338,12 @@ def main() -> int:
             log("Next: review `git diff tests/golden/metrics/cassettes`, then regenerate "
                 "metrics/expected/judge_happy_path in a golden-regen PR (HANDOFF.md).")
         if not replay_ok:
-            log(f"[replay] FAILED: misses={proxy.misses[:3]} unused={len(unused)}")
+            log(f"[replay] FAILED: misses={replay.misses[:3]} unused={len(unused)}")
             return 5
         log("[replay] OK: 0 misses, 0 unused, identical results")
         return 0
     finally:
-        proxy.close()
+        r.close()
         if args.keep_work or args.dry_run:
             log(f"scratch dir kept: {work}")
         else:

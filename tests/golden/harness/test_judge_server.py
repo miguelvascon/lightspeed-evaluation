@@ -92,3 +92,12 @@ def test_served_over_loopback_http() -> None:
         status, raw = post(BODY + " ")
         assert status == 599 and "golden replay miss" in raw.decode()
     assert len(replay.requests) == 2 and len(replay.misses) == 1 and not replay.unused()
+
+
+def test_tagged_recorder_routes_share_the_key() -> None:
+    """The recorder's /t/<tag>/v1 routes replay the same entries as bare /v1."""
+    replay = js.JudgeReplay([_entry(BODY, 0, "a"), _entry(BODY, 1, "b")])
+    assert replay.handles("/t/rec/v1/chat/completions")
+    assert replay.handle("POST", "/t/rec" + PATH, {}, BODY.encode())[0] == 200
+    assert replay.handle("POST", PATH, {}, BODY.encode())[0] == 200
+    replay.assert_clean()

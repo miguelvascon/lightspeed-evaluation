@@ -153,6 +153,38 @@ def test_rename_out_of_src_blocks_both_guards(tmp_path: Path) -> None:
     assert pending_protocol_error(_LISTED, "", opened) is not None
 
 
+def test_three_dot_ignores_src_that_landed_on_main(tmp_path: Path) -> None:
+    """A golden-only PR is not mixed when main adds ``src/`` after the branch."""
+    repo = tmp_path / "repo"
+    (repo / "src").mkdir(parents=True)
+    (repo / "src" / "a.py").write_text("x\n")
+    expected = repo / "tests" / "golden" / "metrics" / "expected" / "case"
+    expected.mkdir(parents=True)
+    (expected / "out.json").write_text("{}\n")
+    _git(repo, "init", "-b", "main")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "base")
+    _git(repo, "checkout", "-b", "golden")
+    (expected / "out.json").write_text('{"n": 1}\n')
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "golden")
+    _git(repo, "checkout", "main")
+    (repo / "src" / "b.py").write_text("y\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "src")
+    base = _git(repo, "rev-parse", "main").strip()
+    head = _git(repo, "rev-parse", "golden").strip()
+    two_dot = _git(repo, "diff", "--name-only", "--no-renames", base, head).split()
+    three_dot = _git(
+        repo, "diff", "--name-only", "--no-renames", f"{base}...{head}"
+    ).split()
+    assert any(path.startswith("src/") for path in two_dot)
+    assert not any(path.startswith("src/") for path in three_dot)
+    assert "tests/golden/metrics/expected/case/out.json" in three_dot
+    assert regen_guard_blocks(two_dot, []) is True
+    assert regen_guard_blocks(three_dot, []) is False
+
+
 def test_empty_file_is_a_noop() -> None:
     """The checked-in file lists nothing, so no case is skipped."""
     text = Path("tests/golden/PENDING_REGEN").read_text(encoding="utf-8")

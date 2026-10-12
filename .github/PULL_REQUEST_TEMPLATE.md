@@ -35,6 +35,7 @@ Identify any AI code assistants used in this PR (for transparency and review con
 - [ ] I have performed a self-review of my code.
 - [ ] PR has passed all pre-merge test jobs.
 - [ ] If it is a core feature, I have added thorough tests.
+- [ ] Golden changes: N/A, or DS sign-off for any `tests/golden/` expectations, cassettes, or fixtures (CODEOWNERS: @miguelvascon).
 
 ## Testing
 - Please provide detailed steps to perform tests related to this code change.
